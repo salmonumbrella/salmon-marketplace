@@ -1,0 +1,20 @@
+{
+  "name": "notion-mcp-server",
+  "version": "1.0.0",
+  "description": "Lightweight MCP server for Notion database operations",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "esbuild src/index.ts --bundle --platform=node --format=esm --outfile=dist/index.js",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@notionhq/client": "^3.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "esbuild": "^0.25.11",
+    "typescript": "^5.0.0"
+  }
+}

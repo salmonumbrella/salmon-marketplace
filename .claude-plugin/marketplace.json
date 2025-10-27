@@ -1,0 +1,24 @@
+{
+  "name": "salmon-marketplace",
+  "owner": {
+    "name": "salmonumbrella",
+    "email": "182032677+salmonumbrella@users.noreply.github.com"
+  },
+  "metadata": {
+    "description": "Personal Claude Code marketplace - Notion integration and custom plugins",
+    "version": "3.0.0"
+  },
+  "plugins": [
+    {
+      "name": "superpowers-notion",
+      "source": "./",
+      "description": "Complete Notion API via unified use_notion tool - 19 actions covering databases, pages, blocks, users, comments, search",
+      "version": "3.0.0",
+      "keywords": ["notion", "database", "mcp", "automation", "integration"],
+      "author": {
+        "name": "salmonumbrella",
+        "email": "182032677+salmonumbrella@users.noreply.github.com"
+      }
+    }
+  ]
+}
