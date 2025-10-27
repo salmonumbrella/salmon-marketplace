@@ -1,9 +1,10 @@
-import { Client } from "@notionhq/client";
+import path from 'node:path'
 import * as readline from "readline";
+import { fileURLToPath } from 'url'
+import { initProxy } from './init-server.js'
 
-const notion = new Client({
-  auth: process.env.NOTION_API_KEY,
-});
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 // MCP Protocol implementation
 interface MCPRequest {
@@ -20,6 +21,7 @@ interface MCPResponse {
   error?: { code: number; message: string };
 }
 
+// Pattern 1 tool schema - single tool with actions
 const tools = [
   {
     name: "use_notion",
@@ -69,6 +71,48 @@ const tools = [
   },
 ];
 
+// Action to Notion MCP tool mapping
+const ACTION_TO_TOOL_MAP: Record<string, { tool: string, method: string }> = {
+  // Database operations
+  "query_database": { tool: "query-database", method: "POST" },
+  "create_database": { tool: "create-database", method: "POST" },
+  "update_database": { tool: "update-database", method: "PATCH" },
+  "get_database": { tool: "get-database", method: "GET" },
+  // Page operations
+  "create_page": { tool: "create-page", method: "POST" },
+  "get_page": { tool: "get-page", method: "GET" },
+  "update_page": { tool: "update-page-properties", method: "PATCH" },
+  "get_page_property": { tool: "get-page-property", method: "GET" },
+  // Block operations
+  "get_block_children": { tool: "get-block-children", method: "GET" },
+  "append_block_children": { tool: "append-block-children", method: "PATCH" },
+  "get_block": { tool: "get-block", method: "GET" },
+  "update_block": { tool: "update-block", method: "PATCH" },
+  "delete_block": { tool: "delete-block", method: "DELETE" },
+  // User operations
+  "get_user": { tool: "get-user", method: "GET" },
+  "list_users": { tool: "list-users", method: "GET" },
+  "get_self": { tool: "get-bot-user", method: "GET" },
+  // Comment operations
+  "get_comments": { tool: "get-comments", method: "GET" },
+  "create_comment": { tool: "create-comment", method: "POST" },
+  // Search
+  "search": { tool: "search", method: "POST" },
+};
+
+// Initialize Notion's official MCP proxy
+let notionProxy: any = null;
+
+async function initializeProxy() {
+  if (!notionProxy) {
+    const specPath = path.resolve(__dirname, 'notion-openapi.json')
+    const baseUrl = process.env.BASE_URL ?? undefined
+    notionProxy = await initProxy(specPath, baseUrl)
+  }
+  return notionProxy
+}
+
+// Route Pattern 1 action to Pattern 2 tool
 async function handleToolCall(
   name: string,
   args: Record<string, unknown>
@@ -79,255 +123,74 @@ async function handleToolCall(
     }
 
     const action = args.action as string;
+    const mapping = ACTION_TO_TOOL_MAP[action];
 
-    switch (action) {
-      case "query_database": {
-        const databaseId = args.database_id as string;
-        const limit = (args.limit as number) || 10;
-
-        const response = await notion.databases.query({
-          database_id: databaseId,
-          page_size: limit,
-        });
-
-        return {
-          pages: response.results.map((page: any) => ({
-            id: page.id,
-            title: page.properties.title?.title?.[0]?.plain_text || "Untitled",
-            properties: page.properties,
-            url: page.url,
-          })),
-          total: response.results.length,
-        };
-      }
-
-      case "create_page": {
-        const databaseId = args.database_id as string;
-        const title = args.title as string;
-        const customProps = (args.properties as Record<string, any>) || {};
-
-        const response = await notion.pages.create({
-          parent: { database_id: databaseId },
-          properties: {
-            title: {
-              title: [{ text: { content: title } }],
-            },
-            ...customProps,
-          },
-        });
-
-        return {
-          id: response.id,
-          title: title,
-          url: (response as any).url,
-          created_time: (response as any).created_time,
-        };
-      }
-
-      case "update_page": {
-        const pageId = args.page_id as string;
-        const properties = args.properties as Record<string, any>;
-
-        const response = await notion.pages.update({
-          page_id: pageId,
-          properties: properties,
-        });
-
-        return {
-          id: response.id,
-          updated: true,
-          url: (response as any).url,
-        };
-      }
-
-      case "get_database": {
-        const databaseId = args.database_id as string;
-
-        const response = await notion.databases.retrieve({
-          database_id: databaseId,
-        });
-
-        return {
-          id: response.id,
-          title: (response as any).title?.[0]?.plain_text || "Untitled",
-          properties: Object.entries((response as any).properties || {}).map(
-            ([key, prop]: any) => ({
-              name: key,
-              type: prop.type,
-            })
-          ),
-        };
-      }
-
-      case "create_database": {
-        const parent = args.parent as Record<string, any>;
-        const title = args.title as string;
-        const properties = args.properties as Record<string, any>;
-
-        const response = await notion.databases.create({
-          parent,
-          title: [{ type: "text", text: { content: title } }],
-          properties,
-        });
-
-        return { id: response.id, url: (response as any).url };
-      }
-
-      case "update_database": {
-        const databaseId = args.database_id as string;
-        const updates: any = {};
-        if (args.title) updates.title = [{ type: "text", text: { content: args.title as string } }];
-        if (args.properties) updates.properties = args.properties;
-
-        const response = await notion.databases.update({
-          database_id: databaseId,
-          ...updates,
-        });
-
-        return { id: response.id, updated: true };
-      }
-
-      case "get_page": {
-        const pageId = args.page_id as string;
-        const response = await notion.pages.retrieve({ page_id: pageId });
-        return response;
-      }
-
-      case "get_page_property": {
-        const pageId = args.page_id as string;
-        const propertyId = args.property_id as string;
-        const response = await notion.pages.properties.retrieve({
-          page_id: pageId,
-          property_id: propertyId,
-        });
-        return response;
-      }
-
-      case "get_block_children": {
-        const blockId = args.block_id as string;
-        const limit = (args.limit as number) || 100;
-        const response = await notion.blocks.children.list({
-          block_id: blockId,
-          page_size: limit,
-        });
-        return { blocks: response.results, has_more: response.has_more };
-      }
-
-      case "append_block_children": {
-        const blockId = args.block_id || args.page_id;
-        let children = args.children as any[];
-
-        // If content string provided, convert to paragraph block
-        if (args.content && !children) {
-          children = [{
-            object: "block",
-            type: "paragraph",
-            paragraph: {
-              rich_text: [{ type: "text", text: { content: args.content as string } }],
-            },
-          }];
-        }
-
-        const response = await notion.blocks.children.append({
-          block_id: blockId as string,
-          children,
-        });
-
-        return { success: true, blocks_added: (response as any).results.length };
-      }
-
-      case "get_block": {
-        const blockId = args.block_id as string;
-        const response = await notion.blocks.retrieve({ block_id: blockId });
-        return response;
-      }
-
-      case "update_block": {
-        const blockId = args.block_id as string;
-        const updates = { ...args };
-        delete updates.action;
-        delete updates.block_id;
-
-        const response = await notion.blocks.update({
-          block_id: blockId,
-          ...updates,
-        } as any);
-
-        return { id: response.id, updated: true };
-      }
-
-      case "delete_block": {
-        const blockId = args.block_id as string;
-        const response = await notion.blocks.delete({ block_id: blockId });
-        return { id: response.id, deleted: true };
-      }
-
-      case "get_user": {
-        const userId = args.user_id as string;
-        const response = await notion.users.retrieve({ user_id: userId });
-        return response;
-      }
-
-      case "list_users": {
-        const limit = (args.limit as number) || 100;
-        const response = await notion.users.list({ page_size: limit });
-        return { users: response.results, has_more: response.has_more };
-      }
-
-      case "get_self": {
-        const response = await notion.users.me({});
-        return response;
-      }
-
-      case "get_comments": {
-        const blockId = args.block_id as string;
-        const response = await notion.comments.list({ block_id: blockId });
-        return { comments: response.results };
-      }
-
-      case "create_comment": {
-        const parent = args.parent as { page_id: string } | { discussion_id: string };
-        const content = args.content as string;
-
-        const response = await notion.comments.create({
-          parent,
-          rich_text: [{ type: "text", text: { content } }],
-        });
-
-        return { id: response.id, created: true };
-      }
-
-      case "search": {
-        const query = args.query as string;
-        const limit = (args.limit as number) || 10;
-
-        const response = await notion.search({
-          query: query,
-          page_size: limit,
-        });
-
-        return {
-          results: response.results.map((item: any) => ({
-            id: item.id,
-            type: item.object,
-            title:
-              item.properties?.title?.title?.[0]?.plain_text ||
-              (item as any).title?.[0]?.plain_text ||
-              "Untitled",
-            url: item.url,
-          })),
-          total: response.results.length,
-        };
-      }
-
-      default:
-        throw new Error(`Unknown action: ${action}`);
+    if (!mapping) {
+      throw new Error(`Unknown action: ${action}`);
     }
+
+    // Initialize proxy
+    const proxy = await initializeProxy();
+
+    // Build tool name with method suffix (how Notion's MCP names tools)
+    const toolName = `${mapping.tool}-${mapping.method}`;
+
+    // Transform args to Notion's format
+    const notionArgs = transformArgs(action, args);
+
+    // Call Notion's official tool through their proxy
+    const result = await proxy.callTool(toolName, notionArgs);
+
+    // Transform result back to our simple format
+    return transformResult(action, result);
+
   } catch (error) {
     throw new Error(
       `Tool error: ${error instanceof Error ? error.message : String(error)}`
     );
   }
+}
+
+// Transform our Pattern 1 args to Notion's expected format
+function transformArgs(action: string, args: Record<string, unknown>): Record<string, unknown> {
+  const transformed: Record<string, unknown> = {};
+
+  // Remove action field
+  const { action: _, ...rest } = args;
+
+  // Map field names to Notion's API parameter names
+  if (rest.database_id) transformed.database_id = rest.database_id;
+  if (rest.page_id) transformed.page_id = rest.page_id;
+  if (rest.block_id) transformed.block_id = rest.block_id;
+  if (rest.user_id) transformed.user_id = rest.user_id;
+  if (rest.property_id) transformed.property_id = rest.property_id;
+  if (rest.filter) transformed.filter = rest.filter;
+  if (rest.sorts) transformed.sorts = rest.sorts;
+  if (rest.start_cursor) transformed.start_cursor = rest.start_cursor;
+  if (rest.limit !== undefined) transformed.page_size = rest.limit;
+  if (rest.query) transformed.query = rest.query;
+  if (rest.parent) transformed.parent = rest.parent;
+  if (rest.properties) transformed.properties = rest.properties;
+  if (rest.children) transformed.children = rest.children;
+
+  // Handle page creation with title
+  if (action === "create_page" && rest.title) {
+    if (!transformed.properties) {
+      transformed.properties = {};
+    }
+    (transformed.properties as any).title = {
+      title: [{ text: { content: rest.title } }]
+    };
+  }
+
+  return transformed;
+}
+
+// Transform Notion's result to our simple format
+function transformResult(action: string, result: any): unknown {
+  // For now, pass through as-is
+  // We could add transformation logic here if needed
+  return result;
 }
 
 async function main() {
@@ -353,8 +216,8 @@ async function main() {
               tools: {},
             },
             serverInfo: {
-              name: "notion-mcp",
-              version: "1.0.0",
+              name: "notion-mcp-pattern1",
+              version: "2.0.0",
             },
           },
         };
