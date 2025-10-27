@@ -118,6 +118,7 @@ async function initializeAuth(): Promise<void> {
     debugLog("[DEBUG] TokenManager created, token path:", tokenManager.getTokenPath())
 
     // Load and validate tokens
+    // Note: validateTokens() internally calls loadSavedTokens() and sets credentials
     const hasValidTokens = await tokenManager.validateTokens()
     debugLog("[DEBUG] validateTokens() returned:", hasValidTokens)
     if (!hasValidTokens) {
@@ -125,12 +126,8 @@ async function initializeAuth(): Promise<void> {
       process.exit(1)
     }
 
-    const tokens = await tokenManager.loadSavedTokens()
-    debugLog("[DEBUG] loadSavedTokens() returned:", tokens ? "tokens loaded" : "null")
-    if (tokens) {
-      oauth2Client.setCredentials(tokens)
-      debugLog("[DEBUG] Credentials set on oauth2Client")
-    }
+    // Credentials are already set by validateTokens() -> loadSavedTokens()
+    // No need to call loadSavedTokens() again or setCredentials() manually
 
     const creds = oauth2Client.credentials
     debugLog("[DEBUG] oauth2Client.credentials after init:", {
