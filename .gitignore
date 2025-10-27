@@ -30,3 +30,9 @@ coverage/
 CLAUDE.md
 .claude.md
 **/CLAUDE.md
+
+# Design docs (keep private)
+docs/
+
+# Worktrees
+.worktrees/
