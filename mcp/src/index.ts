@@ -1,10 +1,24 @@
 import path from 'node:path'
+import * as fs from 'node:fs'
 import * as readline from "readline";
 import { fileURLToPath } from 'url'
 import { initProxy } from './init-server.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
+
+// Debug logging to track MCP server startup
+const debugLog = (msg: string) => {
+  const timestamp = new Date().toISOString()
+  const logEntry = `${timestamp} - ${msg}\n`
+  fs.appendFileSync('/tmp/notion-mcp-debug.log', logEntry)
+}
+
+debugLog('=== MCP Server Starting ===')
+debugLog(`NOTION_TOKEN present: ${process.env.NOTION_TOKEN ? 'YES' : 'NO'}`)
+debugLog(`NOTION_API_KEY present: ${process.env.NOTION_API_KEY ? 'YES' : 'NO'}`)
+debugLog(`Working directory: ${process.cwd()}`)
+debugLog(`__dirname: ${__dirname}`)
 
 // MCP Protocol implementation
 interface MCPRequest {

@@ -16211,7 +16211,7 @@ var require_form_data = __commonJS({
     var http = __require("http");
     var https = __require("https");
     var parseUrl = __require("url").parse;
-    var fs3 = __require("fs");
+    var fs4 = __require("fs");
     var Stream = __require("stream").Stream;
     var crypto = __require("crypto");
     var mime = require_mime_types();
@@ -16278,7 +16278,7 @@ var require_form_data = __commonJS({
         if (value.end != void 0 && value.end != Infinity && value.start != void 0) {
           callback(null, value.end + 1 - (value.start ? value.start : 0));
         } else {
-          fs3.stat(value.path, function(err, stat) {
+          fs4.stat(value.path, function(err, stat) {
             if (err) {
               callback(err);
               return;
@@ -25300,6 +25300,7 @@ var require_openapi_client_axios = __commonJS({
 
 // src/index.ts
 import path2 from "node:path";
+import * as fs3 from "node:fs";
 import * as readline from "readline";
 import { fileURLToPath } from "url";
 
@@ -31659,6 +31660,17 @@ async function initProxy(specPath, baseUrl) {
 // src/index.ts
 var __filename = fileURLToPath(import.meta.url);
 var __dirname = path2.dirname(__filename);
+var debugLog = (msg) => {
+  const timestamp = (/* @__PURE__ */ new Date()).toISOString();
+  const logEntry = `${timestamp} - ${msg}
+`;
+  fs3.appendFileSync("/tmp/notion-mcp-debug.log", logEntry);
+};
+debugLog("=== MCP Server Starting ===");
+debugLog(`NOTION_TOKEN present: ${process.env.NOTION_TOKEN ? "YES" : "NO"}`);
+debugLog(`NOTION_API_KEY present: ${process.env.NOTION_API_KEY ? "YES" : "NO"}`);
+debugLog(`Working directory: ${process.cwd()}`);
+debugLog(`__dirname: ${__dirname}`);
 var tools = [
   {
     name: "use_notion",
