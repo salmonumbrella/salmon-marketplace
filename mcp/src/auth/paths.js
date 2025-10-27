@@ -13,13 +13,19 @@ import { homedir } from 'os';
  * Uses XDG Base Directory specification on Unix-like systems
  */
 export function getSecureTokenPath() {
+  console.error('[DEBUG] getSecureTokenPath() called');
+  console.error('[DEBUG] GOOGLE_CALENDAR_MCP_TOKEN_PATH env var:', process.env.GOOGLE_CALENDAR_MCP_TOKEN_PATH);
+
   // Check environment variable first
   if (process.env.GOOGLE_CALENDAR_MCP_TOKEN_PATH) {
+    console.error('[DEBUG] Using token path from env var:', process.env.GOOGLE_CALENDAR_MCP_TOKEN_PATH);
     return process.env.GOOGLE_CALENDAR_MCP_TOKEN_PATH;
   }
   // Fall back to default path
   const configDir = process.env.XDG_CONFIG_HOME || path.join(homedir(), '.config');
-  return path.join(configDir, 'google-mcp', 'tokens.json');
+  const defaultPath = path.join(configDir, 'google-mcp', 'tokens.json');
+  console.error('[DEBUG] Using default token path:', defaultPath);
+  return defaultPath;
 }
 
 /**
