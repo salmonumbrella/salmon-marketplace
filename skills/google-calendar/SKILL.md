@@ -25,6 +25,48 @@ Direct access to Google Calendar with zero friction. Create events, check availa
 
 **Architecture:** Pattern 1 (single tool, 10 actions, ~2-3k tokens) • On-demand loading (zero context until invoked)
 
+## Calendar Configuration
+
+**FIRST TIME SETUP:**
+
+When this skill is first used, check if user has configured calendar aliases:
+
+1. Read `${CLAUDE_PLUGIN_ROOT}/../../config.json`
+2. If `calendars.work` is `null`, prompt user:
+   ```
+   I can help you configure calendar aliases! You can set up shortcuts like "personal" and "work".
+
+   To configure:
+   1. Edit ~/.claude/plugins/marketplaces/salmon-marketplace/config.json
+   2. Set your work calendar ID (e.g., "work@company.com")
+   3. Or tell me your work calendar email and I'll update it for you
+   ```
+
+**Calendar Alias Resolution:**
+
+When user mentions a calendar by alias (e.g., "put this on my work calendar"):
+
+1. Read config.json from `${CLAUDE_PLUGIN_ROOT}/../../config.json`
+2. Look up alias in `calendars` object
+3. Use the resolved calendar ID in MCP call
+4. If alias not found → use `defaultCalendar` (usually "personal")
+
+**Example config.json:**
+```json
+{
+  "calendars": {
+    "personal": "primary",
+    "work": "vladimir.novoseloff@company.com"
+  },
+  "defaultCalendar": "personal"
+}
+```
+
+**Alias Resolution Examples:**
+- User: "Add to my work calendar" → calendarId: "vladimir.novoseloff@company.com"
+- User: "Check my personal calendar" → calendarId: "primary"
+- User: "Create event" (no calendar mentioned) → calendarId: "primary" (default)
+
 ## Common Operations
 
 ### Create Event
@@ -166,11 +208,23 @@ use_google_calendar({
 
 ## Authentication
 
-Uses existing credentials at `~/.config/google-mcp/`:
+**Default credentials location:** `~/.config/google-mcp/`
 - `gcp-oauth.keys.json` - OAuth client configuration
 - `tokens.json` - Access + refresh tokens (auto-updated)
 
-**No additional setup required** - user already authenticated.
+**Custom credentials location (optional):**
+
+Users can override default paths with environment variables:
+- `GOOGLE_OAUTH_CREDENTIALS` - Path to OAuth credentials file
+- `GOOGLE_CALENDAR_MCP_TOKEN_PATH` - Path to tokens file
+
+Example in `~/.zshrc` or `~/.bashrc`:
+```bash
+export GOOGLE_OAUTH_CREDENTIALS="/path/to/my/credentials.json"
+export GOOGLE_CALENDAR_MCP_TOKEN_PATH="/path/to/my/tokens.json"
+```
+
+**No plugin.json configuration needed** - paths are intentionally NOT hardcoded to allow user flexibility.
 
 ## Performance Rules
 

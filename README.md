@@ -95,13 +95,51 @@ claude plugin install superpowers-google-calendar
 
 **Setup:**
 
-1. Authenticate with Google Calendar (one-time):
+1. **Get OAuth Credentials:**
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Create or select a project
+   - Enable the Google Calendar API
+   - Create OAuth 2.0 credentials (Desktop app)
+   - Download as `gcp-oauth.keys.json`
+
+2. **Place credentials** (choose one option):
+
+   **Option A: Default location (recommended)**
    ```bash
-   # Credentials stored at ~/.config/google-mcp/
-   # Follow OAuth flow when prompted
+   mkdir -p ~/.config/google-mcp
+   mv ~/Downloads/gcp-oauth.keys.json ~/.config/google-mcp/
    ```
-2. Restart Claude Code
-3. Use natural language: "Create a meeting tomorrow at 2pm"
+
+   **Option B: Custom location (advanced)**
+   ```bash
+   # Place anywhere and set environment variables
+   export GOOGLE_OAUTH_CREDENTIALS="/path/to/credentials.json"
+   export GOOGLE_CALENDAR_MCP_TOKEN_PATH="/path/to/tokens.json"
+   ```
+
+3. **Run OAuth flow** (first time only):
+   ```bash
+   cd ~/.claude/plugins/marketplaces/salmon-marketplace/mcp
+   npm install
+   npm run auth
+   ```
+
+4. **Configure calendar aliases** (optional but recommended):
+
+   Edit `~/.claude/plugins/marketplaces/salmon-marketplace/config.json`:
+   ```json
+   {
+     "calendars": {
+       "personal": "primary",
+       "work": "your-work-email@company.com"
+     },
+     "defaultCalendar": "personal"
+   }
+   ```
+
+   Now you can say "add to my work calendar" or "check my personal calendar"!
+
+5. Restart Claude Code
 
 **Usage:**
 

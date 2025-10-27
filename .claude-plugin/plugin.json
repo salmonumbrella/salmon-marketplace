@@ -16,11 +16,7 @@
     },
     "google-calendar": {
       "command": "node",
-      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp/dist/index.js"],
-      "env": {
-        "GOOGLE_OAUTH_CREDENTIALS": "${HOME}/.config/google-mcp/gcp-oauth.keys.json",
-        "GOOGLE_CALENDAR_MCP_TOKEN_PATH": "${HOME}/.config/google-mcp/tokens.json"
-      }
+      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp/dist/index.js"]
     }
   }
 }
