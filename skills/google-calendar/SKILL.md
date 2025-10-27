@@ -29,15 +29,13 @@ Direct access to Google Calendar with zero friction. Create events, check availa
 
 **Calendar Alias Resolution:**
 
-When user mentions a calendar by alias (e.g., "put this on my work calendar"):
+When user mentions a calendar by alias:
 
 1. Check environment variables for `CALENDAR_{ALIAS}`:
    - "personal" → `CALENDAR_PERSONAL`
    - "work" → `CALENDAR_WORK`
-   - "family" → `CALENDAR_FAMILY`
-   - etc.
 2. If found → use that calendar ID
-3. If not found → use `CALENDAR_PERSONAL` (default to "primary")
+3. If not found → use `CALENDAR_PERSONAL` (defaults to "primary")
 
 **Environment Variable Setup:**
 
@@ -45,15 +43,12 @@ User configures in `~/.zshrc` or `~/.bashrc`:
 ```bash
 export CALENDAR_PERSONAL="primary"
 export CALENDAR_WORK="work@company.com"
-export CALENDAR_FAMILY="family@gmail.com"
 ```
-
-Or in `~/.claude/plugins/marketplaces/salmon-marketplace/mcp/.env` for local development.
 
 **Alias Resolution Examples:**
 - User: "Add to my work calendar" → `CALENDAR_WORK` → "work@company.com"
 - User: "Check my personal calendar" → `CALENDAR_PERSONAL` → "primary"
-- User: "Create event" (no calendar mentioned) → `CALENDAR_PERSONAL` → "primary" (default)
+- User: "Create event" (no calendar mentioned) → `CALENDAR_PERSONAL` → "primary"
 
 **First Time Setup:**
 
