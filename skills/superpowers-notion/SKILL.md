@@ -1,7 +1,7 @@
 ---
 name: superpowers-notion
 description: Personal Notion automation - context-efficient, pre-configured databases, auto-assigns DRI/Watch fields
-allowed-tools: mcp__plugin_superpowers-notion_notion__use_notion
+allowed-tools: mcp__notion__use_notion
 ---
 
 # Superpowers: Notion (Personal Edition)
