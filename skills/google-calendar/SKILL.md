@@ -42,7 +42,7 @@ When user mentions a calendar by alias:
 User configures in `~/.zshrc` or `~/.bashrc`:
 ```bash
 export CALENDAR_PERSONAL="primary"
-export CALENDAR_WORK="work@company.com"
+export CALENDAR_WORK="your-work-email@company.com"
 ```
 
 **Alias Resolution Examples:**
