@@ -14,7 +14,7 @@ import { homedir } from 'os';
  */
 export function getSecureTokenPath() {
   const configDir = process.env.XDG_CONFIG_HOME || path.join(homedir(), '.config');
-  return path.join(configDir, 'google-calendar-mcp', 'tokens.json');
+  return path.join(configDir, 'google-mcp', 'tokens.json');
 }
 
 /**

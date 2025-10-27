@@ -99,7 +99,7 @@ let tokenManager: TokenManager
 async function initializeAuth(): Promise<void> {
   try {
     oauth2Client = await initializeOAuth2Client()
-    tokenManager = new TokenManager()
+    tokenManager = new TokenManager(oauth2Client)
 
     // Load and validate tokens
     const hasValidTokens = await tokenManager.validateTokens()
