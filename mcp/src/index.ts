@@ -98,20 +98,34 @@ let tokenManager: TokenManager
  */
 async function initializeAuth(): Promise<void> {
   try {
+    console.error("[DEBUG] initializeAuth() starting")
     oauth2Client = await initializeOAuth2Client()
+    console.error("[DEBUG] OAuth2Client created")
+
     tokenManager = new TokenManager(oauth2Client)
+    console.error("[DEBUG] TokenManager created, token path:", tokenManager.getTokenPath())
 
     // Load and validate tokens
     const hasValidTokens = await tokenManager.validateTokens()
+    console.error("[DEBUG] validateTokens() returned:", hasValidTokens)
     if (!hasValidTokens) {
       console.error("[google-calendar-mcp] No valid tokens found. Please authenticate first.")
       process.exit(1)
     }
 
     const tokens = await tokenManager.loadSavedTokens()
+    console.error("[DEBUG] loadSavedTokens() returned:", tokens ? "tokens loaded" : "null")
     if (tokens) {
       oauth2Client.setCredentials(tokens)
+      console.error("[DEBUG] Credentials set on oauth2Client")
     }
+
+    const creds = oauth2Client.credentials
+    console.error("[DEBUG] oauth2Client.credentials after init:", {
+      hasAccessToken: !!creds.access_token,
+      hasRefreshToken: !!creds.refresh_token,
+      expiry: creds.expiry_date
+    })
 
     console.error("[google-calendar-mcp] Authentication initialized successfully")
   } catch (error) {
@@ -124,6 +138,14 @@ async function initializeAuth(): Promise<void> {
  * Execute Google Calendar action using handlers
  */
 async function executeCalendarAction(params: UseGoogleCalendarInput): Promise<any> {
+  console.error("[DEBUG] executeCalendarAction() called for action:", params.action)
+  const creds = oauth2Client.credentials
+  console.error("[DEBUG] oauth2Client.credentials at execution:", {
+    hasAccessToken: !!creds.access_token,
+    hasRefreshToken: !!creds.refresh_token,
+    expiry: creds.expiry_date
+  })
+
   switch (params.action) {
     case GoogleCalendarAction.GET_CURRENT_TIME:
       return await new GetCurrentTimeHandler().runTool(params, oauth2Client)
