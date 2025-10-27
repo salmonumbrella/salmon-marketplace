@@ -66,6 +66,78 @@ claude mcp list
 # Should show: plugin:superpowers-notion:notion ✓ Connected
 ```
 
+### superpowers-google-calendar
+
+Complete Google Calendar API access with on-demand MCP loading - zero context pollution until you use it.
+
+**Architecture:**
+- Pattern 1 (single `use_google_calendar` tool with 10 actions)
+- Bundled MCP server (loads only when invoked)
+- ~2-3k tokens context usage
+- Built on the official Claude MCP SDK (mirrors the superpowers-chrome layout)
+
+**Features:**
+- **10 actions**: Full Google Calendar coverage (events, scheduling, availability, conflicts)
+- **Context preservation**: MCP loads on-demand, not at session start
+- **Conflict detection**: Automatic time conflict and duplicate detection
+- **Multi-calendar support**: Query multiple calendars simultaneously
+- **Pattern 1 efficiency**: One tool instead of 16 separate tools
+
+**Installation:**
+
+```bash
+# Add this marketplace (if not already added)
+claude marketplace add salmon-marketplace https://github.com/salmonumbrella/salmon-marketplace.git
+
+# Install the plugin
+claude plugin install superpowers-google-calendar
+```
+
+**Setup:**
+
+1. Authenticate with Google Calendar (one-time):
+   ```bash
+   # Credentials stored at ~/.config/google-mcp/
+   # Follow OAuth flow when prompted
+   ```
+2. Restart Claude Code
+3. Use natural language: "Create a meeting tomorrow at 2pm"
+
+**Usage:**
+
+```javascript
+// Create an event
+"Schedule a team meeting next Monday at 10am"
+
+// Check availability
+"Am I free tomorrow afternoon?"
+
+// Search calendar
+"What's on my calendar this week?"
+
+// Update event
+"Move my 2pm meeting to 3pm"
+```
+
+The plugin automatically handles conflicts, date parsing, and timezone conversions!
+
+**Verify it's loaded:**
+
+```bash
+claude mcp list
+# Should show: plugin:superpowers-google-calendar:google-calendar ✓ Connected
+```
+
+## Why This Exists (Google Calendar)
+
+Traditional Google Calendar MCP servers load 16 separate tools at session start, consuming ~30-50k tokens. This plugin:
+- Loads on-demand (zero tokens until invoked)
+- Uses Pattern 1 (1 tool vs 16 = ~2-3k tokens vs ~30-50k tokens)
+- Preserves context for your actual work
+- Includes conflict detection and smart scheduling
+
+Perfect for calendar operations without the massive context overhead.
+
 ## Why This Exists
 
 Traditional Notion MCP servers load at session start, consuming ~12k+ tokens even when not in use. This plugin:
