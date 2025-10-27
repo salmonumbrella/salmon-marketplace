@@ -5,16 +5,27 @@
     "email": "182032677+salmonumbrella@users.noreply.github.com"
   },
   "metadata": {
-    "description": "Personal Claude Code marketplace - Notion integration and custom plugins",
-    "version": "4.0.0"
+    "description": "Personal Claude Code marketplace - Notion & Google Calendar automation with custom skills",
+    "version": "5.0.0"
   },
   "plugins": [
     {
       "name": "superpowers-notion",
       "source": "./",
       "description": "Pattern 1 wrapper around Notion's official MCP - battle-tested reliability with 1k token footprint",
-      "version": "4.0.0",
+      "version": "5.1.0",
       "keywords": ["notion", "database", "mcp", "automation", "routing"],
+      "author": {
+        "name": "salmonumbrella",
+        "email": "182032677+salmonumbrella@users.noreply.github.com"
+      }
+    },
+    {
+      "name": "superpowers-google-calendar",
+      "source": "./",
+      "description": "Pattern 1 Google Calendar MCP - single tool with 10 actions, context-efficient ~2-3k tokens",
+      "version": "1.0.0",
+      "keywords": ["google-calendar", "calendar", "mcp", "automation", "scheduling", "pattern1"],
       "author": {
         "name": "salmonumbrella",
         "email": "182032677+salmonumbrella@users.noreply.github.com"

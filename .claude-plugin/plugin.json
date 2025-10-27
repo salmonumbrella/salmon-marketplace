@@ -1,15 +1,19 @@
 {
-  "name": "superpowers-google-calendar",
+  "name": "salmon-marketplace",
   "version": "1.0.0",
-  "description": "Pattern 1 Google Calendar MCP - single tool with 10 actions, context-efficient ~2-3k tokens",
+  "description": "Salmon's personal skills marketplace - Notion & Google Calendar automation with Pattern 1 MCP servers",
   "author": {
     "name": "salmonumbrella",
     "email": "182032677+salmonumbrella@users.noreply.github.com"
   },
   "homepage": "https://github.com/salmonumbrella/salmon-marketplace",
   "license": "MIT",
-  "keywords": ["google-calendar", "calendar", "mcp", "automation", "scheduling", "pattern1"],
+  "keywords": ["notion", "google-calendar", "calendar", "mcp", "automation", "scheduling", "pattern1"],
   "mcpServers": {
+    "notion": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp/dist/index-sdk.js"]
+    },
     "google-calendar": {
       "command": "node",
       "args": ["${CLAUDE_PLUGIN_ROOT}/mcp/dist/index.js"]
