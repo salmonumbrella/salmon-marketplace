@@ -89,11 +89,52 @@ properties: {
 }
 ```
 
+**Don't add the same user who is DRI to watch in the same page.**
+
 **Databases with DRI/Watch fields:**
 - Issue Tracker → Has DRI
 - IPS → (check schema)
 - 1:1s → Has DRI + Watch
 - (Always verify with `get_database` first)
+
+## Title Property Handling (CRITICAL!)
+
+**Problem:** Notion allows renaming title properties in the UI, but the MCP `title` parameter hardcodes "title" as the property name.
+
+**Solution:** ALWAYS use the property name directly in the `properties` object. NEVER use the top-level `title` parameter.
+
+**Pattern for creating pages:**
+
+1. Get database schema first to find actual title property name:
+```javascript
+const db = await use_notion({
+  action: "get_database",
+  database_id: process.env.NOTION_DB_ISSUE_TRACKER
+})
+
+// Find the property with type === "title"
+const titlePropName = Object.keys(db.properties).find(
+  key => db.properties[key].type === "title"
+)
+```
+
+2. Use that property name in the properties object:
+```javascript
+await use_notion({
+  action: "create_page",
+  database_id: process.env.NOTION_DB_ISSUE_TRACKER,
+  properties: {
+    [titlePropName]: {
+      title: [{ text: { content: "Your title here" } }]
+    },
+    "DRI": { people: [{ id: process.env.NOTION_USER_ID }] }
+  }
+})
+```
+
+**Known title property names:**
+- Issue Tracker → `"Title"`
+- (Check schema for other databases)
 
 ## Performance Rules
 
@@ -102,26 +143,60 @@ properties: {
 3. **Batch operations** - Use parallel tool calls when possible
 4. **No artificial limits** - Remove `limit: 5` restrictions
 5. **Skip confirmations** - Just do it (user trusts you)
+6. **Cache title property names** - After first schema fetch, reuse the property name
 
 ## Common Operations
 
-**Create issue:**
+**Create issue (correct pattern):**
 ```javascript
-use_notion({
+// Step 1: Get database schema to find title property name
+const db = await use_notion({
+  action: "get_database",
+  database_id: process.env.NOTION_DB_ISSUE_TRACKER
+})
+
+const titleProp = Object.keys(db.properties).find(
+  key => db.properties[key].type === "title"
+)
+
+// Step 2: Create page using actual property name
+await use_notion({
   action: "create_page",
   database_id: process.env.NOTION_DB_ISSUE_TRACKER,
-  title: issue_title,
-  properties: { "DRI": { people: [{ id: process.env.NOTION_USER_ID }] } }
+  properties: {
+    [titleProp]: {
+      title: [{ text: { content: issue_title } }]
+    },
+    "DRI": { people: [{ id: process.env.NOTION_USER_ID }] }
+  }
+})
+```
+
+**Quick create (if title property name is known):**
+```javascript
+// For Issue Tracker, we know the title property is "Title"
+await use_notion({
+  action: "create_page",
+  database_id: process.env.NOTION_DB_ISSUE_TRACKER,
+  properties: {
+    "Title": {
+      title: [{ text: { content: issue_title } }]
+    },
+    "DRI": { people: [{ id: process.env.NOTION_USER_ID }] }
+  }
 })
 ```
 
 **Add to glossary:**
 ```javascript
-use_notion({
+// First get schema or use known property name
+await use_notion({
   action: "create_page",
   database_id: process.env.NOTION_DB_GLOSSARY,
-  title: term,
   properties: {
+    [titlePropertyName]: {
+      title: [{ text: { content: term } }]
+    },
     "Summary": { rich_text: [{ text: { content: definition } }] }
   }
 })
@@ -129,11 +204,13 @@ use_notion({
 
 **Schedule meeting:**
 ```javascript
-use_notion({
+await use_notion({
   action: "create_page",
   database_id: process.env.NOTION_DB_MEETINGS,
-  title: meeting_name,
   properties: {
+    [titlePropertyName]: {
+      title: [{ text: { content: meeting_name } }]
+    },
     "Date": { date: { start: iso_datetime } },
     "DRI": { people: [{ id: process.env.NOTION_USER_ID }] }
   }
