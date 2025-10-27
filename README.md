@@ -126,20 +126,16 @@ claude plugin install superpowers-google-calendar
 
 4. **Configure calendar aliases** (optional but recommended):
 
-   Edit `~/.claude/plugins/marketplaces/salmon-marketplace/config.json`:
-   ```json
-   {
-     "calendars": {
-       "personal": "primary",
-       "work": "your-work-email@company.com"
-     },
-     "defaultCalendar": "personal"
-   }
+   Add to your `~/.zshrc` or `~/.bashrc`:
+   ```bash
+   export CALENDAR_PERSONAL="primary"
+   export CALENDAR_WORK="your-work-email@company.com"
+   # export CALENDAR_FAMILY="family@gmail.com"
    ```
 
    Now you can say "add to my work calendar" or "check my personal calendar"!
 
-5. Restart Claude Code
+5. Restart your terminal and Claude Code
 
 **Usage:**
 

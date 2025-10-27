@@ -27,45 +27,44 @@ Direct access to Google Calendar with zero friction. Create events, check availa
 
 ## Calendar Configuration
 
-**FIRST TIME SETUP:**
-
-When this skill is first used, check if user has configured calendar aliases:
-
-1. Read `${CLAUDE_PLUGIN_ROOT}/../../config.json`
-2. If `calendars.work` is `null`, prompt user:
-   ```
-   I can help you configure calendar aliases! You can set up shortcuts like "personal" and "work".
-
-   To configure:
-   1. Edit ~/.claude/plugins/marketplaces/salmon-marketplace/config.json
-   2. Set your work calendar ID (e.g., "work@company.com")
-   3. Or tell me your work calendar email and I'll update it for you
-   ```
-
 **Calendar Alias Resolution:**
 
 When user mentions a calendar by alias (e.g., "put this on my work calendar"):
 
-1. Read config.json from `${CLAUDE_PLUGIN_ROOT}/../../config.json`
-2. Look up alias in `calendars` object
-3. Use the resolved calendar ID in MCP call
-4. If alias not found → use `defaultCalendar` (usually "personal")
+1. Check environment variables for `CALENDAR_{ALIAS}`:
+   - "personal" → `CALENDAR_PERSONAL`
+   - "work" → `CALENDAR_WORK`
+   - "family" → `CALENDAR_FAMILY`
+   - etc.
+2. If found → use that calendar ID
+3. If not found → use `CALENDAR_PERSONAL` (default to "primary")
 
-**Example config.json:**
-```json
-{
-  "calendars": {
-    "personal": "primary",
-    "work": "vladimir.novoseloff@company.com"
-  },
-  "defaultCalendar": "personal"
-}
+**Environment Variable Setup:**
+
+User configures in `~/.zshrc` or `~/.bashrc`:
+```bash
+export CALENDAR_PERSONAL="primary"
+export CALENDAR_WORK="work@company.com"
+export CALENDAR_FAMILY="family@gmail.com"
 ```
 
+Or in `~/.claude/plugins/marketplaces/salmon-marketplace/mcp/.env` for local development.
+
 **Alias Resolution Examples:**
-- User: "Add to my work calendar" → calendarId: "vladimir.novoseloff@company.com"
-- User: "Check my personal calendar" → calendarId: "primary"
-- User: "Create event" (no calendar mentioned) → calendarId: "primary" (default)
+- User: "Add to my work calendar" → `CALENDAR_WORK` → "work@company.com"
+- User: "Check my personal calendar" → `CALENDAR_PERSONAL` → "primary"
+- User: "Create event" (no calendar mentioned) → `CALENDAR_PERSONAL` → "primary" (default)
+
+**First Time Setup:**
+
+If user says "work calendar" but `CALENDAR_WORK` is not set, prompt:
+```
+I can help you set up calendar aliases! Add this to your ~/.zshrc or ~/.bashrc:
+
+export CALENDAR_WORK="your-work-email@company.com"
+
+Then restart your terminal and Claude Code.
+```
 
 ## Common Operations
 
