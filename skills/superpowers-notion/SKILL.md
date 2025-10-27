@@ -1,10 +1,23 @@
 ---
 name: superpowers-notion
 description: Personal Notion automation - context-efficient, pre-configured databases, auto-assigns DRI/Watch fields
-allowed-tools: mcp__notion__use_notion
+allowed-tools: Task, mcp__notion__use_notion
 ---
 
 # Superpowers: Notion (Personal Edition)
+
+## MANDATORY: Always Use Subagents
+
+**NEVER call MCP tools directly from this skill.**
+
+ALL Notion operations MUST be executed through subagents using the Task tool.
+
+**Pattern:**
+1. Skill parses user intent
+2. Skill dispatches Task with subagent_type="general-purpose"
+3. Subagent executes Notion MCP calls
+4. Subagent returns structured results
+5. Skill formats results for user
 
 ## What This Does
 
@@ -82,70 +95,6 @@ properties: {
 - 1:1s → Has DRI + Watch
 - (Always verify with `get_database` first)
 
-## Workflow: Create Issue (FAST)
-
-```javascript
-// ❌ OLD WAY (slow, wastes context):
-// 1. Search for "Issue Tracker"
-// 2. Filter results
-// 3. Use database_id
-
-// ✅ NEW WAY (instant):
-use_notion({
-  action: "create_page",
-  database_id: process.env.NOTION_DB_ISSUE_TRACKER,  // Direct access!
-  title: "Fix login bug",
-  properties: {
-    "DRI": { people: [{ id: userId }] }  // Auto-assign
-  }
-})
-```
-
-## Workflow: Auto-Detect Schema
-
-Before creating pages in a database you haven't used recently:
-
-```javascript
-// Get schema to know which fields exist
-const schema = use_notion({
-  action: "get_database",
-  database_id: process.env.NOTION_DB_ONE_ON_ONES
-});
-
-// Extract people field names
-const peopleFields = schema.properties
-  .filter(p => p.type === "people")
-  .map(p => p.name);  // ["DRI", "Watch"]
-
-// Auto-populate all people fields
-const properties = {};
-peopleFields.forEach(field => {
-  properties[field] = { people: [{ id: userId }] };
-});
-
-// Create page with auto-assignment
-use_notion({
-  action: "create_page",
-  database_id: process.env.NOTION_DB_ONE_ON_ONES,
-  title: "1:1 with Team",
-  properties
-});
-```
-
-## Available Actions (19 total)
-
-**Databases:** `query_database`, `create_database`, `update_database`, `get_database`
-
-**Pages:** `create_page`, `get_page`, `update_page`, `get_page_property`
-
-**Blocks:** `get_block_children`, `append_block_children`, `get_block`, `update_block`, `delete_block`
-
-**Users:** `get_user`, `list_users`, `get_self`
-
-**Comments:** `get_comments`, `create_comment`
-
-**Search:** `search` (only use for finding PAGES, not databases!)
-
 ## Performance Rules
 
 1. **NO database searches** - Use env vars for database IDs
@@ -197,51 +146,18 @@ use_notion({
   action: "query_database",
   database_id: process.env.NOTION_DB_ISSUE_TRACKER,
   filter: {
-    property: "Status",
-    status: { does_not_equal: "Done" }
+    and: [
+      {
+        or: [
+          { property: "DRI", people: { contains: process.env.NOTION_USER_ID } },
+          { property: "Watch", people: { contains: process.env.NOTION_USER_ID } }
+        ]
+      },
+      { property: "Status", status: { does_not_equal: "Done" } },
+      { property: "Status", status: { does_not_equal: "Canceled" } },
+      { property: "Status", status: { does_not_equal: "Triage" } }
+    ]
   }
 })
 ```
 
-## Red Flags
-
-❌ Using `search` to find databases → Use env vars
-❌ Forgetting to auto-assign DRI/Watch → Always check schema
-❌ Adding `limit: 5` to searches → Remove artificial limits
-❌ Asking for confirmation → Just execute
-❌ Generic responses → Be specific to user's workflow
-
-## Speed Philosophy
-
-**Old skill:** Search → Filter → Confirm → Execute (4 steps, high context)
-
-**This skill:** Execute (1 step, minimal context)
-
-User knows what they want. Your job is to execute instantly with zero friction.
-
-## Context Efficiency
-
-- **No database searches** = -1 tool call per operation (instant database resolution)
-- **No user lookups** = -1 tool call per page creation (pre-configured user ID)
-- **Direct env var access** = zero API overhead
-- **Pattern 1 architecture** = ~1k tokens vs ~12k
-
-**Result:** Creating an issue = **1 tool call** (vs 4-5 in old workflow). 4-5x faster, 95% less context usage.
-
-## Troubleshooting
-
-**"Can't find database"** → You searched. Don't search. Use env vars.
-
-**"No DRI field"** → Check database schema with `get_database` first.
-
-**"Permission denied"** → Verify `NOTION_API_KEY` in `~/.config/notion/.env`
-
-**"MCP not loading"** → Restart Claude Code, source your shell config.
-
-## This Is Personal Software
-
-This skill is tailored for personal workflows. It's not generic. It's optimized for one person's Notion workspace.
-
-That's the point. General-purpose tools are slow. Personal tools are fast.
-
-When this proves valuable over time, it can be generalized for wider use.
