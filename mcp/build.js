@@ -4,7 +4,7 @@ import * as path from 'path';
 
 async function build() {
   await esbuild.build({
-    entryPoints: ['src/index-sdk.ts'],
+    entryPoints: ['src/index.ts'],
     bundle: true,
     platform: 'node',
     target: 'node18',
