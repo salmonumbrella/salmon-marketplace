@@ -1,8 +1,10 @@
 import * as esbuild from 'esbuild';
+import * as fs from 'fs';
+import * as path from 'path';
 
 async function build() {
   await esbuild.build({
-    entryPoints: ['src/index.ts'],
+    entryPoints: ['src/index-sdk.ts'],
     bundle: true,
     platform: 'node',
     target: 'node18',
