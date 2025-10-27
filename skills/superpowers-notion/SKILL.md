@@ -1,219 +1,247 @@
 ---
 name: superpowers-notion
-description: Interact with Notion databases and pages via on-demand MCP - creates issues, queries data, manages content with zero context until invoked
+description: Personal Notion automation - context-efficient, pre-configured databases, auto-assigns DRI/Watch fields
+allowed-tools: mcp__notion__use_notion
 ---
 
-# Superpowers: Notion
+# Superpowers: Notion (Personal Edition)
 
 ## What This Does
 
-Provides Notion API access through an on-demand MCP plugin. The MCP loads ONLY when you use it, preserving context for the main conversation.
+Direct access to your Notion workspace with zero friction. All databases pre-configured, auto-assignment built-in.
 
-**Architecture:** Plugin with bundled MCP server (Pattern 1: single tool, 19 actions, ~1k tokens)
+**Architecture:** Pattern 1 (single tool, 19 actions, ~1k tokens) • On-demand loading (zero context until invoked)
 
-## When to Use
+## Your Databases (Pre-configured)
 
-- User asks to create/update Notion content
-- User wants to query Notion databases
-- User needs to manage pages, blocks, comments
-- ANY Notion operation
+**DO NOT search for databases.** Use these environment variables directly:
 
-## Quick Start
-
-When user asks to interact with Notion:
-
-1. **Find the right database** (don't hardcode IDs!)
-2. **Use the `use_notion` tool** with appropriate action
-3. **Return results** to user
-
-## Finding Databases Dynamically
-
-❌ **DON'T:** Hardcode database IDs
-✅ **DO:** Search for databases by name
-
-```javascript
-// Step 1: Search for issue tracker
-use_notion({
-  action: "search",
-  query: "Issues",  // or "Issue Tracker", "Tasks", etc.
-  limit: 5
-})
-
-// Step 2: Use the database_id from results
-use_notion({
-  action: "create_page",
-  database_id: "<id-from-search>",
-  title: "Bug: Login broken",
-  properties: { ... }
-})
-```
-
-**Common database names to search for:**
-- Issues/Issue Tracker → bug tracking
-- Tasks/To-Do → task management
-- Projects → project tracking
-- Notes/Docs → documentation
-
-## Available Actions (19 total)
-
-**Databases:**
-- `query_database` - Search/filter pages
-- `create_database` - Make new database
-- `update_database` - Modify database schema
-- `get_database` - Get database structure
-
-**Pages:**
-- `create_page` - Add new page
-- `get_page` - Retrieve page details
-- `update_page` - Modify page properties
-- `get_page_property` - Get specific property
-
-**Blocks (content):**
-- `get_block_children` - List child blocks
-- `append_block_children` - Add content
-- `get_block` - Get block details
-- `update_block` - Modify block
-- `delete_block` - Remove block
-
-**Users:**
-- `get_user` - Get user by ID
-- `list_users` - List all users
-- `get_self` - Get bot user info
-
-**Comments:**
-- `get_comments` - Get comments on block
-- `create_comment` - Add comment
-
-**Search:**
-- `search` - Workspace-wide search
-
-## Example: Create Issue
-
-```javascript
-// User: "Create an issue called 'Fix login bug'"
-
-// 1. Find issue database
-const results = use_notion({
-  action: "search",
-  query: "Issues"
-})
-
-// 2. Create issue
-use_notion({
-  action: "create_page",
-  database_id: results.results[0].id,
-  title: "Fix login bug"
-})
-```
-
-## Example: Query Tasks
-
-```javascript
-// User: "Show me all open tasks"
-
-// 1. Find tasks database
-const db = use_notion({
-  action: "search",
-  query: "Tasks",
-  limit: 1
-})
-
-// 2. Query for open tasks
-use_notion({
-  action: "query_database",
-  database_id: db.results[0].id,
-  limit: 20
-})
-```
-
-## Context Preservation
-
-**Why this matters:**
-- Traditional MCP servers load at session start (always consuming context)
-- This plugin's MCP loads ON-DEMAND (zero context until you invoke the skill)
-- Pattern 1 architecture: 1 tool instead of 19 = ~1k tokens vs ~12k tokens
-
-**Result:** Main conversation stays clean. Notion operations don't bloat your context budget.
-
-## Installation
-
-Plugin is already installed! If not:
 ```bash
-claude marketplace add salmon-marketplace <url>
-claude plugin install superpowers-notion
+NOTION_DB_ISSUE_TRACKER  # Issue Tracker (main bugs/tasks)
+NOTION_DB_IPS            # Issue Proposed Solutions
+NOTION_DB_MEETINGS       # Meetings
+NOTION_DB_ONE_ON_ONES    # 1:1s
+NOTION_DB_GLOSSARY       # Glossary (terms/definitions)
+NOTION_DB_SOP            # Standard Operating Procedures
+NOTION_DB_CONTACTS       # Contacts
+NOTION_DB_AREAS          # Areas of Responsibility
+NOTION_DB_CONTENT_CALENDAR  # Content Calendar
+NOTION_DB_GUIDES         # Guides
+NOTION_DB_CONTRACTS      # Contracts
+NOTION_DB_NOTEBOOKS      # Notebooks
+NOTION_DB_VENDOR_INVOICES   # Vendor Invoices
+NOTION_DB_PAYEE          # Payee
 ```
 
-Set environment variable:
-```bash
-export NOTION_API_KEY="your-key"
-```
+**NEVER use search to find databases.** Environment variables are already loaded.
 
-## Common Patterns
+## User Intent → Database Mapping
 
-**Create content with properties:**
+When user says:                   Use this database:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+"create an issue"                 NOTION_DB_ISSUE_TRACKER
+"add a solution"                  NOTION_DB_IPS
+"schedule a meeting"              NOTION_DB_MEETINGS
+"create a 1:1"                    NOTION_DB_ONE_ON_ONES
+"add to glossary"                 NOTION_DB_GLOSSARY
+"create SOP"                      NOTION_DB_SOP
+"add contact"                     NOTION_DB_CONTACTS
+"schedule content"                NOTION_DB_CONTENT_CALENDAR
+"create guide"                    NOTION_DB_GUIDES
+"add contract"                    NOTION_DB_CONTRACTS
+"create notebook"                 NOTION_DB_NOTEBOOKS
+"add invoice"                     NOTION_DB_VENDOR_INVOICES
+"add payee"                       NOTION_DB_PAYEE
+
+## Auto-Assignment (Critical!)
+
+**When creating pages, ALWAYS check for these people fields:**
+
+- `DRI` (Directly Responsible Individual)
+- `Watch` (people watching/following)
+- `Assignee`
+- `Owner`
+- `Assigned to`
+
+**AUTO-ASSIGN user to these fields:**
+
 ```javascript
+// User ID is pre-configured in env
+const userId = process.env.NOTION_USER_ID;  // No API call needed!
+
+// Auto-populate in properties
+properties: {
+  "DRI": { people: [{ id: userId }] },
+  "Watch": { people: [{ id: userId }] }
+}
+```
+
+**Databases with DRI/Watch fields:**
+- Issue Tracker → Has DRI
+- IPS → (check schema)
+- 1:1s → Has DRI + Watch
+- (Always verify with `get_database` first)
+
+## Workflow: Create Issue (FAST)
+
+```javascript
+// ❌ OLD WAY (slow, wastes context):
+// 1. Search for "Issue Tracker"
+// 2. Filter results
+// 3. Use database_id
+
+// ✅ NEW WAY (instant):
 use_notion({
   action: "create_page",
-  database_id: "<db-id>",
-  title: "Page title",
+  database_id: process.env.NOTION_DB_ISSUE_TRACKER,  // Direct access!
+  title: "Fix login bug",
   properties: {
-    "Status": { status: { name: "In Progress" } },
-    "Priority": { select: { name: "High" } }
+    "DRI": { people: [{ id: userId }] }  // Auto-assign
   }
 })
 ```
 
-**Add content to page:**
+## Workflow: Auto-Detect Schema
+
+Before creating pages in a database you haven't used recently:
+
+```javascript
+// Get schema to know which fields exist
+const schema = use_notion({
+  action: "get_database",
+  database_id: process.env.NOTION_DB_ONE_ON_ONES
+});
+
+// Extract people field names
+const peopleFields = schema.properties
+  .filter(p => p.type === "people")
+  .map(p => p.name);  // ["DRI", "Watch"]
+
+// Auto-populate all people fields
+const properties = {};
+peopleFields.forEach(field => {
+  properties[field] = { people: [{ id: userId }] };
+});
+
+// Create page with auto-assignment
+use_notion({
+  action: "create_page",
+  database_id: process.env.NOTION_DB_ONE_ON_ONES,
+  title: "1:1 with Team",
+  properties
+});
+```
+
+## Available Actions (19 total)
+
+**Databases:** `query_database`, `create_database`, `update_database`, `get_database`
+
+**Pages:** `create_page`, `get_page`, `update_page`, `get_page_property`
+
+**Blocks:** `get_block_children`, `append_block_children`, `get_block`, `update_block`, `delete_block`
+
+**Users:** `get_user`, `list_users`, `get_self`
+
+**Comments:** `get_comments`, `create_comment`
+
+**Search:** `search` (only use for finding PAGES, not databases!)
+
+## Performance Rules
+
+1. **NO database searches** - Use env vars for database IDs
+2. **NO user lookups** - Use `NOTION_USER_ID` env var directly
+3. **Batch operations** - Use parallel tool calls when possible
+4. **No artificial limits** - Remove `limit: 5` restrictions
+5. **Skip confirmations** - Just do it (user trusts you)
+
+## Common Operations
+
+**Create issue:**
 ```javascript
 use_notion({
-  action: "append_block_children",
-  page_id: "<page-id>",
-  content: "This is paragraph text"
+  action: "create_page",
+  database_id: process.env.NOTION_DB_ISSUE_TRACKER,
+  title: issue_title,
+  properties: { "DRI": { people: [{ id: process.env.NOTION_USER_ID }] } }
 })
 ```
 
-**Search and filter:**
+**Add to glossary:**
+```javascript
+use_notion({
+  action: "create_page",
+  database_id: process.env.NOTION_DB_GLOSSARY,
+  title: term,
+  properties: {
+    "Summary": { rich_text: [{ text: { content: definition } }] }
+  }
+})
+```
+
+**Schedule meeting:**
+```javascript
+use_notion({
+  action: "create_page",
+  database_id: process.env.NOTION_DB_MEETINGS,
+  title: meeting_name,
+  properties: {
+    "Date": { date: { start: iso_datetime } },
+    "DRI": { people: [{ id: process.env.NOTION_USER_ID }] }
+  }
+})
+```
+
+**Query open issues:**
 ```javascript
 use_notion({
   action: "query_database",
-  database_id: "<db-id>",
+  database_id: process.env.NOTION_DB_ISSUE_TRACKER,
   filter: {
     property: "Status",
-    status: { equals: "Open" }
+    status: { does_not_equal: "Done" }
   }
 })
 ```
 
 ## Red Flags
 
-❌ Hardcoding database IDs → Use search
-❌ Assuming database names → Search first, confirm
-❌ Creating pages without checking database schema → Get database first
-❌ Forgetting to set NOTION_API_KEY → Check env var
+❌ Using `search` to find databases → Use env vars
+❌ Forgetting to auto-assign DRI/Watch → Always check schema
+❌ Adding `limit: 5` to searches → Remove artificial limits
+❌ Asking for confirmation → Just execute
+❌ Generic responses → Be specific to user's workflow
+
+## Speed Philosophy
+
+**Old skill:** Search → Filter → Confirm → Execute (4 steps, high context)
+
+**This skill:** Execute (1 step, minimal context)
+
+User knows what they want. Your job is to execute instantly with zero friction.
+
+## Context Efficiency
+
+- **No database searches** = -1 tool call per operation (instant database resolution)
+- **No user lookups** = -1 tool call per page creation (pre-configured user ID)
+- **Direct env var access** = zero API overhead
+- **Pattern 1 architecture** = ~1k tokens vs ~12k
+
+**Result:** Creating an issue = **1 tool call** (vs 4-5 in old workflow). 4-5x faster, 95% less context usage.
 
 ## Troubleshooting
 
-**MCP not loading?**
-- Check: `claude mcp list` shows `plugin:superpowers-notion:notion`
-- Verify: `NOTION_API_KEY` is set
-- Restart Claude Code after plugin install
+**"Can't find database"** → You searched. Don't search. Use env vars.
 
-**Can't find database?**
-- Search is case-insensitive but partial match
-- Try variations: "Issues" vs "Issue Tracker" vs "Tasks"
-- List all: `search` with empty query returns everything
+**"No DRI field"** → Check database schema with `get_database` first.
 
-**Properties not working?**
-- Get database schema first: `get_database`
-- Match property types exactly (status, select, multi_select, etc.)
-- Property names are case-sensitive
+**"Permission denied"** → Verify `NOTION_API_KEY` in `~/.config/notion/.env`
 
-## Why This Plugin Exists
+**"MCP not loading"** → Restart Claude Code, source your shell config.
 
-**Problem:** Notion MCP servers are amazing but load at session start, consuming context budget even when not in use.
+## This Is Personal Software
 
-**Solution:** Bundle MCP in a plugin that loads on-demand. Pattern 1 architecture keeps token count minimal.
+This skill is tailored for personal workflows. It's not generic. It's optimized for one person's Notion workspace.
 
-**Result:** You get full Notion API power (19 actions) in ~1k tokens, only when you need it.
+That's the point. General-purpose tools are slow. Personal tools are fast.
 
-This is the future of MCP integration: on-demand, context-preserving, powerful.
+When this proves valuable over time, it can be generalized for wider use.
