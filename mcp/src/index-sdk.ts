@@ -280,8 +280,8 @@ Pattern 1 interface: single tool with action parameter. Supports all Notion API 
 
       return {
         content: [{
-          type: "json" as const,
-          json: result
+          type: "text" as const,
+          text: JSON.stringify(result, null, 2)
         }]
       }
     } catch (error) {

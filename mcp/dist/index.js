@@ -15392,8 +15392,8 @@ Pattern 1 interface: single tool with action parameter. Supports all Notion API 
       const result = await executeNotionAction(params);
       return {
         content: [{
-          type: "json",
-          json: result
+          type: "text",
+          text: JSON.stringify(result, null, 2)
         }]
       };
     } catch (error) {
