@@ -8,6 +8,18 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { OAuth2Client } from "google-auth-library"
 import { z } from "zod"
+import fs from "fs"
+import path from "path"
+import os from "os"
+
+// Debug logging to file
+const DEBUG_LOG = path.join(os.homedir(), '.config/google-mcp/debug.log')
+function debugLog(...args: any[]) {
+  const timestamp = new Date().toISOString()
+  const message = `[${timestamp}] ${args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')}\n`
+  fs.appendFileSync(DEBUG_LOG, message)
+  console.error(...args)
+}
 
 // Import handlers
 import { CreateEventHandler } from "./handlers/core/CreateEventHandler.js"
@@ -98,38 +110,38 @@ let tokenManager: TokenManager
  */
 async function initializeAuth(): Promise<void> {
   try {
-    console.error("[DEBUG] initializeAuth() starting")
+    debugLog("[DEBUG] initializeAuth() starting")
     oauth2Client = await initializeOAuth2Client()
-    console.error("[DEBUG] OAuth2Client created")
+    debugLog("[DEBUG] OAuth2Client created")
 
     tokenManager = new TokenManager(oauth2Client)
-    console.error("[DEBUG] TokenManager created, token path:", tokenManager.getTokenPath())
+    debugLog("[DEBUG] TokenManager created, token path:", tokenManager.getTokenPath())
 
     // Load and validate tokens
     const hasValidTokens = await tokenManager.validateTokens()
-    console.error("[DEBUG] validateTokens() returned:", hasValidTokens)
+    debugLog("[DEBUG] validateTokens() returned:", hasValidTokens)
     if (!hasValidTokens) {
-      console.error("[google-calendar-mcp] No valid tokens found. Please authenticate first.")
+      debugLog("[google-calendar-mcp] No valid tokens found. Please authenticate first.")
       process.exit(1)
     }
 
     const tokens = await tokenManager.loadSavedTokens()
-    console.error("[DEBUG] loadSavedTokens() returned:", tokens ? "tokens loaded" : "null")
+    debugLog("[DEBUG] loadSavedTokens() returned:", tokens ? "tokens loaded" : "null")
     if (tokens) {
       oauth2Client.setCredentials(tokens)
-      console.error("[DEBUG] Credentials set on oauth2Client")
+      debugLog("[DEBUG] Credentials set on oauth2Client")
     }
 
     const creds = oauth2Client.credentials
-    console.error("[DEBUG] oauth2Client.credentials after init:", {
+    debugLog("[DEBUG] oauth2Client.credentials after init:", {
       hasAccessToken: !!creds.access_token,
       hasRefreshToken: !!creds.refresh_token,
       expiry: creds.expiry_date
     })
 
-    console.error("[google-calendar-mcp] Authentication initialized successfully")
+    debugLog("[google-calendar-mcp] Authentication initialized successfully")
   } catch (error) {
-    console.error("[google-calendar-mcp] Failed to initialize auth:", error)
+    debugLog("[google-calendar-mcp] Failed to initialize auth:", error)
     process.exit(1)
   }
 }
@@ -138,9 +150,9 @@ async function initializeAuth(): Promise<void> {
  * Execute Google Calendar action using handlers
  */
 async function executeCalendarAction(params: UseGoogleCalendarInput): Promise<any> {
-  console.error("[DEBUG] executeCalendarAction() called for action:", params.action)
+  debugLog("[DEBUG] executeCalendarAction() called for action:", params.action)
   const creds = oauth2Client.credentials
-  console.error("[DEBUG] oauth2Client.credentials at execution:", {
+  debugLog("[DEBUG] oauth2Client.credentials at execution:", {
     hasAccessToken: !!creds.access_token,
     hasRefreshToken: !!creds.refresh_token,
     expiry: creds.expiry_date
@@ -230,6 +242,14 @@ Pattern 1 interface: single tool with action parameter. Supports all Google Cale
 
 // Main function
 async function main() {
+  debugLog("=== Google Calendar MCP server starting ===")
+  debugLog("Process PID:", process.pid)
+  debugLog("Environment variables:", {
+    GOOGLE_OAUTH_CREDENTIALS: process.env.GOOGLE_OAUTH_CREDENTIALS,
+    GOOGLE_CALENDAR_MCP_TOKEN_PATH: process.env.GOOGLE_CALENDAR_MCP_TOKEN_PATH,
+    NODE_ENV: process.env.NODE_ENV
+  })
+
   // Initialize auth first
   await initializeAuth()
 
@@ -239,7 +259,7 @@ async function main() {
   // Connect server to transport
   await server.connect(transport)
 
-  console.error("Google Calendar MCP server (Pattern 1, SDK) running via stdio")
+  debugLog("Google Calendar MCP server (Pattern 1, SDK) running via stdio")
 }
 
 // Run the server
