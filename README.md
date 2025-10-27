@@ -12,7 +12,7 @@ Complete Notion API access with on-demand MCP loading - zero context pollution u
 - Pattern 1 (single `use_notion` tool with 19 actions)
 - Bundled MCP server (loads only when invoked)
 - ~1k tokens context usage
-- Follows superpowers-chrome design pattern
+- Built on the official Claude MCP SDK (mirrors the superpowers-chrome layout)
 
 **Features:**
 - **19 actions**: Full Notion API coverage (databases, pages, blocks, users, comments, search)
@@ -34,9 +34,12 @@ claude plugin install superpowers-notion
 
 1. Create Notion integration at https://www.notion.so/my-integrations
 2. Get your API token
-3. Set environment variable:
+3. Set environment variables:
    ```bash
-   export NOTION_API_KEY="your-token-here"
+   export NOTION_TOKEN="ntn_your_internal_integration_token"
+   export NOTION_USER_ID="your-user-id"                   # optional, enables auto-assign
+   # Optional: preconfigure database ids for zero-lookups
+   export NOTION_DB_ISSUE_TRACKER="..."                   # repeat for the rest
    ```
 4. Grant your integration access to databases in Notion
 5. Restart Claude Code
@@ -71,6 +74,19 @@ Traditional Notion MCP servers load at session start, consuming ~12k+ tokens eve
 - Preserves context for your actual work
 
 Perfect for occasional Notion operations without the context overhead.
+
+## Development
+
+The Notion MCP server now ships as a single SDK-powered entrypoint (`mcp/src/index-sdk.ts`). To hack on it locally:
+
+```bash
+cd mcp
+cp .env.example .env                       # edit with your token + workspace ids
+npm install
+npm run build                              # emits dist/index.js
+```
+
+Then point Claude Desktop at the built file with the usual marketplace install flow. The server will fail fast if `NOTION_TOKEN` (or `NOTION_API_KEY`) is missing and prints a short summary of which optional database IDs were detected.
 
 ## Contributing
 

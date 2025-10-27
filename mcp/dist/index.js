@@ -15102,9 +15102,89 @@ var StdioServerTransport = class {
 
 // src/index-sdk.ts
 var import_client = __toESM(require_src(), 1);
-var notion = new import_client.Client({
-  auth: process.env.NOTION_TOKEN
-});
+
+// src/config.ts
+import process3 from "node:process";
+var REQUIRED_TOKENS = ["NOTION_TOKEN", "NOTION_API_KEY"];
+var OPTIONAL_DATABASE_VARS = [
+  "NOTION_DB_ISSUE_TRACKER",
+  "NOTION_DB_IPS",
+  "NOTION_DB_MEETINGS",
+  "NOTION_DB_ONE_ON_ONES",
+  "NOTION_DB_GLOSSARY",
+  "NOTION_DB_SOP",
+  "NOTION_DB_CONTACTS",
+  "NOTION_DB_AREAS_OF_RESPONSIBILITY",
+  "NOTION_DB_CONTENT_CALENDAR",
+  "NOTION_DB_GUIDES",
+  "NOTION_DB_CONTRACTS",
+  "NOTION_DB_NOTEBOOKS",
+  "NOTION_DB_VENDOR_INVOICES",
+  "NOTION_DB_PAYEE"
+];
+var MissingEnvError = class extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "MissingEnvError";
+  }
+};
+function loadEnvConfig() {
+  const tokenEntry = REQUIRED_TOKENS.find((key) => {
+    const value = process3.env[key];
+    return typeof value === "string" && value.trim().length > 0;
+  });
+  if (!tokenEntry) {
+    throw new MissingEnvError("Set NOTION_TOKEN (preferred) or NOTION_API_KEY before starting the Notion MCP server.");
+  }
+  const authToken = process3.env[tokenEntry].trim();
+  const userId = process3.env.NOTION_USER_ID?.trim();
+  const baseUrl = process3.env.NOTION_BASE_URL?.trim();
+  const databaseIds = {};
+  for (const key of OPTIONAL_DATABASE_VARS) {
+    const value = process3.env[key];
+    if (value && value.trim().length > 0) {
+      databaseIds[key] = value.trim();
+    }
+  }
+  return {
+    authToken,
+    tokenSource: tokenEntry,
+    userId: userId && userId.length > 0 ? userId : void 0,
+    baseUrl: baseUrl && baseUrl.length > 0 ? baseUrl : void 0,
+    databaseIds
+  };
+}
+function logConfigSummary(config) {
+  const missingDatabases = OPTIONAL_DATABASE_VARS.filter((key) => !config.databaseIds[key]);
+  const summary = [
+    `[notion-mcp] Auth via ${config.tokenSource}`,
+    `[notion-mcp] NOTION_USER_ID ${config.userId ? "present" : "missing"}`,
+    `[notion-mcp] Preconfigured database IDs: ${Object.keys(config.databaseIds).length}`,
+    missingDatabases.length > 0 ? `[notion-mcp] Missing optional database vars: ${missingDatabases.join(", ")}` : "[notion-mcp] All optional database vars present"
+  ];
+  for (const line of summary) {
+    console.error(line);
+  }
+}
+
+// src/index-sdk.ts
+var notion;
+var notionUserId;
+try {
+  const envConfig = loadEnvConfig();
+  notion = new import_client.Client({
+    auth: envConfig.authToken
+  });
+  notionUserId = envConfig.userId;
+  logConfigSummary(envConfig);
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  console.error(`[notion-mcp] Failed to initialize configuration: ${message}`);
+  if (error instanceof MissingEnvError) {
+    console.error("[notion-mcp] Exiting because required environment variables are missing.");
+  }
+  process.exit(1);
+}
 var NotionAction = /* @__PURE__ */ ((NotionAction2) => {
   NotionAction2["QUERY_DATABASE"] = "query_database";
   NotionAction2["CREATE_DATABASE"] = "create_database";
@@ -15145,19 +15225,48 @@ var UseNotionParams = {
   limit: external_exports.number().optional().describe("Result limit (default: 10)"),
   start_cursor: external_exports.string().optional().describe("Pagination cursor")
 };
+function requireParam(value, param, action) {
+  if (value === void 0 || value === null || value === "") {
+    throw new Error(`"${param}" is required for action "${action}"`);
+  }
+  return value;
+}
+function ensurePeopleFieldAutoAssign(properties) {
+  if (!notionUserId) {
+    return properties;
+  }
+  if (!properties) {
+    return void 0;
+  }
+  const cloned = { ...properties };
+  for (const [field, value] of Object.entries(properties)) {
+    if (!value || typeof value !== "object") continue;
+    const typed = value;
+    if (!("people" in typed)) continue;
+    const people = typed.people;
+    if (!Array.isArray(people) || people.length > 0) {
+      continue;
+    }
+    cloned[field] = {
+      ...typed,
+      people: [{ id: notionUserId }]
+    };
+  }
+  return cloned;
+}
 async function executeNotionAction(params) {
   switch (params.action) {
     // Database operations
     case "query_database" /* QUERY_DATABASE */:
       return await notion.databases.query({
-        database_id: params.database_id,
+        database_id: requireParam(params.database_id, "database_id", params.action),
         filter: params.filter,
         sorts: params.sorts,
         start_cursor: params.start_cursor,
         page_size: params.limit
       });
     case "get_database" /* GET_DATABASE */:
-      return await notion.databases.retrieve({ database_id: params.database_id });
+      return await notion.databases.retrieve({ database_id: requireParam(params.database_id, "database_id", params.action) });
     case "create_database" /* CREATE_DATABASE */:
       return await notion.databases.create({
         parent: params.parent,
@@ -15166,41 +15275,44 @@ async function executeNotionAction(params) {
       });
     case "update_database" /* UPDATE_DATABASE */:
       return await notion.databases.update({
-        database_id: params.database_id,
+        database_id: requireParam(params.database_id, "database_id", params.action),
         title: params.title ? [{ text: { content: params.title } }] : void 0,
         properties: params.properties
       });
     // Page operations
     case "create_page" /* CREATE_PAGE */:
-      const pageProps = { ...params.properties || {} };
-      if (params.title) {
-        pageProps.title = { title: [{ text: { content: params.title } }] };
+      const pageProps = ensurePeopleFieldAutoAssign(params.properties || {});
+      if (params.title && pageProps && !("title" in pageProps)) {
+        ;
+        pageProps.title = {
+          title: [{ text: { content: params.title } }]
+        };
       }
       return await notion.pages.create({
-        parent: params.parent || { database_id: params.database_id },
+        parent: params.parent || { database_id: requireParam(params.database_id, "database_id", params.action) },
         properties: pageProps
       });
     case "get_page" /* GET_PAGE */:
-      return await notion.pages.retrieve({ page_id: params.page_id });
+      return await notion.pages.retrieve({ page_id: requireParam(params.page_id, "page_id", params.action) });
     case "update_page" /* UPDATE_PAGE */:
       return await notion.pages.update({
-        page_id: params.page_id,
+        page_id: requireParam(params.page_id, "page_id", params.action),
         properties: params.properties
       });
     case "get_page_property" /* GET_PAGE_PROPERTY */:
       return await notion.pages.properties.retrieve({
-        page_id: params.page_id,
-        property_id: params.property_id
+        page_id: requireParam(params.page_id, "page_id", params.action),
+        property_id: requireParam(params.property_id, "property_id", params.action)
       });
     // Block operations
     case "get_block_children" /* GET_BLOCK_CHILDREN */:
       return await notion.blocks.children.list({
-        block_id: params.block_id,
+        block_id: requireParam(params.block_id, "block_id", params.action),
         start_cursor: params.start_cursor,
         page_size: params.limit
       });
     case "append_block_children" /* APPEND_BLOCK_CHILDREN */:
-      const children = params.children || [];
+      const children = params.children ? [...params.children] : [];
       if (params.content && children.length === 0) {
         children.push({
           object: "block",
@@ -15211,21 +15323,21 @@ async function executeNotionAction(params) {
         });
       }
       return await notion.blocks.children.append({
-        block_id: params.block_id || params.page_id,
+        block_id: requireParam(params.block_id ?? params.page_id, "block_id or page_id", params.action),
         children
       });
     case "get_block" /* GET_BLOCK */:
-      return await notion.blocks.retrieve({ block_id: params.block_id });
+      return await notion.blocks.retrieve({ block_id: requireParam(params.block_id, "block_id", params.action) });
     case "update_block" /* UPDATE_BLOCK */:
       return await notion.blocks.update({
-        block_id: params.block_id,
+        block_id: requireParam(params.block_id, "block_id", params.action),
         ...params
       });
     case "delete_block" /* DELETE_BLOCK */:
-      return await notion.blocks.delete({ block_id: params.block_id });
+      return await notion.blocks.delete({ block_id: requireParam(params.block_id, "block_id", params.action) });
     // User operations
     case "get_user" /* GET_USER */:
-      return await notion.users.retrieve({ user_id: params.user_id });
+      return await notion.users.retrieve({ user_id: requireParam(params.user_id, "user_id", params.action) });
     case "list_users" /* LIST_USERS */:
       return await notion.users.list({
         start_cursor: params.start_cursor,
@@ -15236,14 +15348,14 @@ async function executeNotionAction(params) {
     // Comment operations
     case "get_comments" /* GET_COMMENTS */:
       return await notion.comments.list({
-        block_id: params.block_id,
+        block_id: requireParam(params.block_id, "block_id", params.action),
         start_cursor: params.start_cursor,
         page_size: params.limit
       });
     case "create_comment" /* CREATE_COMMENT */:
       return await notion.comments.create({
         parent: params.parent,
-        rich_text: [{ text: { content: params.content } }]
+        rich_text: [{ text: { content: requireParam(params.content, "content", params.action) } }]
       });
     // Search
     case "search" /* SEARCH */:
@@ -15260,7 +15372,7 @@ async function executeNotionAction(params) {
 }
 var server = new McpServer({
   name: "notion-mcp-pattern1",
-  version: "5.0.0"
+  version: "5.1.0"
 });
 server.tool(
   "use_notion",
@@ -15280,8 +15392,8 @@ Pattern 1 interface: single tool with action parameter. Supports all Notion API 
       const result = await executeNotionAction(params);
       return {
         content: [{
-          type: "text",
-          text: JSON.stringify(result, null, 2)
+          type: "json",
+          json: result
         }]
       };
     } catch (error) {
@@ -15299,7 +15411,7 @@ Pattern 1 interface: single tool with action parameter. Supports all Notion API 
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("Notion MCP server (Pattern 1) running via stdio");
+  console.error("Notion MCP server (Pattern 1, SDK) running via stdio");
 }
 main().catch((error) => {
   console.error("Server error:", error);

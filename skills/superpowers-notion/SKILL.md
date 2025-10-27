@@ -24,7 +24,7 @@ NOTION_DB_ONE_ON_ONES    # 1:1s
 NOTION_DB_GLOSSARY       # Glossary (terms/definitions)
 NOTION_DB_SOP            # Standard Operating Procedures
 NOTION_DB_CONTACTS       # Contacts
-NOTION_DB_AREAS          # Areas of Responsibility
+NOTION_DB_AREAS_OF_RESPONSIBILITY  # Areas of Responsibility
 NOTION_DB_CONTENT_CALENDAR  # Content Calendar
 NOTION_DB_GUIDES         # Guides
 NOTION_DB_CONTRACTS      # Contracts
