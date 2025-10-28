@@ -166,7 +166,7 @@ claude mcp list
 Unified Google workspace automation - Calendar + Gmail in a single plugin with shared authentication.
 
 **Architecture:**
-- Multi-MCP pattern (single plugin loads both Calendar and Gmail MCP servers)
+- Multi-tool MCP server (single MCP server exposes both Calendar and Gmail tools)
 - Pattern 1 for both tools (`use_google_calendar` + `use_gmail`)
 - ~4-6k tokens total context usage
 - Shared OAuth credentials at `~/.config/google-mcp/`
@@ -248,6 +248,7 @@ The plugin automatically handles authentication, date parsing, and API interacti
 ```bash
 claude mcp list
 # Should show: plugin:superpowers-google:google-calendar ✓ Connected
+# Note: The single google-calendar MCP server exposes both Calendar and Gmail tools
 ```
 
 ## Why This Exists
