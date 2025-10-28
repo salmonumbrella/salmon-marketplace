@@ -36,3 +36,4 @@ docs/
 
 # Worktrees
 .worktrees/
+mcp/gcp-oauth.keys.json
