@@ -39,11 +39,13 @@ When user mentions a calendar by alias:
 
 **Environment Variable Setup:**
 
-User configures in `~/.zshrc` or `~/.bashrc`:
+User creates `~/.config/google-mcp/.env`:
 ```bash
-export CALENDAR_PERSONAL="primary"
-export CALENDAR_WORK="your-work-email@company.com"
+CALENDAR_PERSONAL=personal-email@gmail.com
+CALENDAR_WORK=your-work-email@company.com
 ```
+
+This file is automatically loaded by the MCP server and is NOT tracked by git (it's in the user's home directory, outside the repo).
 
 **Alias Resolution Examples:**
 - User: "Add to my work calendar" → `CALENDAR_WORK` → "work@company.com"
@@ -54,11 +56,14 @@ export CALENDAR_WORK="your-work-email@company.com"
 
 If user says "work calendar" but `CALENDAR_WORK` is not set, prompt:
 ```
-I can help you set up calendar aliases! Add this to your ~/.zshrc or ~/.bashrc:
+I can help you set up calendar aliases!
 
-export CALENDAR_WORK="your-work-email@company.com"
+Create or edit ~/.config/google-mcp/.env and add:
 
-Then restart your terminal and Claude Code.
+CALENDAR_PERSONAL=personal-email@gmail.com
+CALENDAR_WORK=your-work-email@company.com
+
+Then restart Claude Code.
 ```
 
 ## Common Operations

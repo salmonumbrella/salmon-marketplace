@@ -11,6 +11,13 @@ import { z } from "zod"
 import fs from "fs"
 import path from "path"
 import os from "os"
+import { config } from "dotenv"
+
+// Load environment variables from ~/.config/google-mcp/.env
+const envPath = path.join(os.homedir(), '.config/google-mcp/.env')
+if (fs.existsSync(envPath)) {
+  config({ path: envPath })
+}
 
 // Debug logging to file
 const DEBUG_LOG = path.join(os.homedir(), '.config/google-mcp/debug.log')

@@ -126,10 +126,10 @@ claude plugin install superpowers-google-calendar
 
 4. **Configure calendar aliases** (optional but recommended):
 
-   Add to your `~/.zshrc` or `~/.bashrc`:
+   Create `~/.config/google-mcp/.env`:
    ```bash
-   export CALENDAR_PERSONAL="primary"
-   export CALENDAR_WORK="your-work-email@company.com"
+   CALENDAR_PERSONAL=personal-email@gmail.com
+   CALENDAR_WORK=your-work-email@company.com
    ```
 
    Now you can say "add to my work calendar" or "check my personal calendar"!
