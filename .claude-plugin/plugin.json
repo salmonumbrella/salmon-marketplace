@@ -1,14 +1,14 @@
 {
   "name": "salmon-marketplace",
   "version": "1.0.0",
-  "description": "Salmon's personal skills marketplace - Notion & Google Calendar automation with Pattern 1 MCP servers",
+  "description": "Salmon's personal skills marketplace - Notion, Google Calendar & Gmail automation",
   "author": {
     "name": "salmonumbrella",
     "email": "182032677+salmonumbrella@users.noreply.github.com"
   },
   "homepage": "https://github.com/salmonumbrella/salmon-marketplace",
   "license": "MIT",
-  "keywords": ["notion", "google-calendar", "calendar", "mcp", "automation", "scheduling", "pattern1"],
+  "keywords": ["notion", "google", "calendar", "gmail", "mcp", "automation", "pattern1"],
   "mcpServers": {
     "notion": {
       "command": "node",
