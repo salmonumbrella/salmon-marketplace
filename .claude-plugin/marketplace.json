@@ -5,8 +5,8 @@
     "email": "182032677+salmonumbrella@users.noreply.github.com"
   },
   "metadata": {
-    "description": "Personal Claude Code marketplace - Notion & Google Calendar automation with custom skills",
-    "version": "5.0.0"
+    "description": "Personal Claude Code marketplace - Notion, Google Calendar & Gmail automation",
+    "version": "6.0.0"
   },
   "plugins": [
     {
@@ -26,6 +26,17 @@
       "description": "Pattern 1 Google Calendar MCP - single tool with 10 actions, context-efficient ~2-3k tokens",
       "version": "1.0.0",
       "keywords": ["google-calendar", "calendar", "mcp", "automation", "scheduling", "pattern1"],
+      "author": {
+        "name": "salmonumbrella",
+        "email": "182032677+salmonumbrella@users.noreply.github.com"
+      }
+    },
+    {
+      "name": "superpowers-google",
+      "source": "./",
+      "description": "Unified Google services plugin - Calendar + Gmail via multi-MCP pattern",
+      "version": "1.0.0",
+      "keywords": ["google", "calendar", "gmail", "email", "mcp", "automation", "pattern1"],
       "author": {
         "name": "salmonumbrella",
         "email": "182032677+salmonumbrella@users.noreply.github.com"
