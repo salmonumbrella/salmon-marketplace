@@ -23,7 +23,7 @@ ALL Google operations MUST be executed through subagents using the Task tool.
 
 Direct access to Google Calendar + Gmail with zero friction. Shared authentication at ~/.config/google-mcp/
 
-**Architecture:** Multi-MCP plugin pattern - Two MCP servers, unified skill interface
+**Architecture:** Multi-tool MCP pattern - Single MCP server exposing two tools
 
 ## Calendar Operations
 
