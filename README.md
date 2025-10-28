@@ -161,24 +161,111 @@ claude mcp list
 # Should show: plugin:superpowers-google-calendar:google-calendar ✓ Connected
 ```
 
-## Why This Exists (Google Calendar)
+### superpowers-google
 
-Traditional Google Calendar MCP servers load 16 separate tools at session start, consuming ~30-50k tokens. This plugin:
-- Loads on-demand (zero tokens until invoked)
-- Uses Pattern 1 (1 tool vs 16 = ~2-3k tokens vs ~30-50k tokens)
-- Preserves context for your actual work
-- Includes conflict detection and smart scheduling
+Unified Google workspace automation - Calendar + Gmail in a single plugin with shared authentication.
 
-Perfect for calendar operations without the massive context overhead.
+**Architecture:**
+- Multi-MCP pattern (single plugin loads both Calendar and Gmail MCP servers)
+- Pattern 1 for both tools (`use_google_calendar` + `use_gmail`)
+- ~4-6k tokens total context usage
+- Shared OAuth credentials at `~/.config/google-mcp/`
+
+**Features:**
+- **Calendar (10 actions)**: Events, scheduling, availability, conflict detection
+- **Gmail (11 actions)**: Send, read, search, labels, threads, attachments
+- **Shared authentication**: Single OAuth flow for both services
+- **Context preservation**: MCP loads on-demand, not at session start
+- **Pattern 1 efficiency**: 2 tools instead of 27+ separate tools
+
+**Installation:**
+
+```bash
+# Add this marketplace (if not already added)
+claude marketplace add salmon-marketplace https://github.com/salmonumbrella/salmon-marketplace.git
+
+# Install the plugin
+claude plugin install superpowers-google
+```
+
+**Setup:**
+
+1. **Get OAuth Credentials:**
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Create or select a project
+   - Enable both Google Calendar API and Gmail API
+   - Create OAuth 2.0 credentials (Desktop app)
+   - Download as `gcp-oauth.keys.json`
+
+2. **Place credentials:**
+   ```bash
+   mkdir -p ~/.config/google-mcp
+   mv ~/Downloads/gcp-oauth.keys.json ~/.config/google-mcp/
+   ```
+
+3. **Run OAuth flow** (first time only - authenticates both services):
+   ```bash
+   cd ~/.claude/plugins/marketplaces/salmon-marketplace/mcp
+   npm install
+   npm run auth
+   ```
+
+4. Restart your terminal and Claude Code
+
+**Calendar Usage:**
+
+```javascript
+// Create an event
+"Schedule a team meeting next Monday at 10am"
+
+// Check availability
+"Am I free tomorrow afternoon?"
+
+// Search calendar
+"What's on my calendar this week?"
+```
+
+**Gmail Usage:**
+
+```javascript
+// Check inbox
+"Show me my unread emails"
+
+// Send email
+"Send an email to john@example.com about the project deadline"
+
+// Search
+"Find emails from my boss about Q4 planning"
+
+// Manage labels
+"Label this email as 'Important'"
+```
+
+The plugin automatically handles authentication, date parsing, and API interactions!
+
+**Verify it's loaded:**
+
+```bash
+claude mcp list
+# Should show: plugin:superpowers-google:google-calendar ✓ Connected
+```
 
 ## Why This Exists
 
+**Google Services (Calendar + Gmail):**
+Traditional Google MCP servers load 27+ separate tools at session start, consuming ~50-80k tokens. These plugins:
+- Load on-demand (zero tokens until invoked)
+- Use Pattern 1 (2 tools vs 27+ = ~4-6k tokens vs ~50-80k tokens)
+- Share authentication (single OAuth flow)
+- Preserve context for your actual work
+
+**Notion:**
 Traditional Notion MCP servers load at session start, consuming ~12k+ tokens even when not in use. This plugin:
 - Loads on-demand (zero tokens until invoked)
 - Uses Pattern 1 (1 tool vs 19 = ~1k tokens vs ~12k tokens)
 - Preserves context for your actual work
 
-Perfect for occasional Notion operations without the context overhead.
+Perfect for workspace operations without the massive context overhead.
 
 ## Development
 
