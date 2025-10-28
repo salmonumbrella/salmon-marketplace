@@ -1,4 +1,14 @@
 #!/usr/bin/env node
+/**
+ * REFERENCE IMPLEMENTATION ONLY
+ *
+ * This file contains the original Gmail MCP server implementation from @shinzolabs/gmail-mcp.
+ * It is kept for reference purposes only and is not used in the Pattern 1 implementation.
+ *
+ * The Pattern 1 implementation can be found in:
+ * - mcp/src/gmail/pattern1.ts (single tool wrapper)
+ * - mcp/src/index.ts (main server file)
+ */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"

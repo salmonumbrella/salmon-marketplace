@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Pattern 1 MCP Server for Google Calendar API
- * Single use_google_calendar tool with 16 actions
+ * Single use_google_calendar tool with 10 actions
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
@@ -210,7 +210,7 @@ const server = new McpServer({
 // Register the use_google_calendar tool
 server.tool(
   "use_google_calendar",
-  `Complete Google Calendar control - 16 actions covering events, scheduling, availability.
+  `Complete Google Calendar control - 10 actions covering events, scheduling, availability.
 
 Pattern 1 interface: single tool with action parameter. Supports all Google Calendar operations.`,
   UseGoogleCalendarParams,

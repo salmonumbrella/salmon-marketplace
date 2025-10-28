@@ -101,6 +101,16 @@ export const UseGmailParams = {
 export type UseGmailInput = z.infer<ReturnType<typeof z.object<typeof UseGmailParams>>>
 
 /**
+ * Helper to validate required parameters
+ */
+function requireParam<T>(value: T | undefined | null, paramName: string, action: string): T {
+  if (value === undefined || value === null) {
+    throw new Error(`Missing required parameter '${paramName}' for action '${action}'`)
+  }
+  return value
+}
+
+/**
  * Helper to construct email message in RFC 2822 format
  */
 function createEmailMessage(params: UseGmailInput): string {
@@ -161,7 +171,7 @@ export async function executeGmailAction(params: UseGmailInput, oauth2Client: OA
     case GmailAction.GET_MESSAGE:
       const getMessageResponse = await gmail.users.messages.get({
         userId,
-        id: params.id || params.messageId!,
+        id: params.id || requireParam(params.messageId, 'id or messageId', GmailAction.GET_MESSAGE),
         format: params.format || 'full',
         metadataHeaders: params.metadataHeaders
       })
@@ -185,7 +195,7 @@ export async function executeGmailAction(params: UseGmailInput, oauth2Client: OA
     case GmailAction.MODIFY_MESSAGE:
       const modifyResponse = await gmail.users.messages.modify({
         userId,
-        id: params.id || params.messageId!,
+        id: params.id || requireParam(params.messageId, 'id or messageId', GmailAction.MODIFY_MESSAGE),
         requestBody: {
           addLabelIds: params.addLabelIds,
           removeLabelIds: params.removeLabelIds
@@ -196,14 +206,14 @@ export async function executeGmailAction(params: UseGmailInput, oauth2Client: OA
     case GmailAction.TRASH_MESSAGE:
       const trashResponse = await gmail.users.messages.trash({
         userId,
-        id: params.id || params.messageId!
+        id: params.id || requireParam(params.messageId, 'id or messageId', GmailAction.TRASH_MESSAGE)
       })
       return trashResponse.data
 
     case GmailAction.DELETE_MESSAGE:
       await gmail.users.messages.delete({
         userId,
-        id: params.id || params.messageId!
+        id: params.id || requireParam(params.messageId, 'id or messageId', GmailAction.DELETE_MESSAGE)
       })
       return { success: true, deleted: params.id || params.messageId }
 
@@ -222,7 +232,7 @@ export async function executeGmailAction(params: UseGmailInput, oauth2Client: OA
     case GmailAction.GET_THREAD:
       const getThreadResponse = await gmail.users.threads.get({
         userId,
-        id: params.id || params.threadId!,
+        id: params.id || requireParam(params.threadId, 'id or threadId', GmailAction.GET_THREAD),
         format: params.format,
         metadataHeaders: params.metadataHeaders
       })
@@ -231,7 +241,7 @@ export async function executeGmailAction(params: UseGmailInput, oauth2Client: OA
     case GmailAction.MODIFY_THREAD:
       const modifyThreadResponse = await gmail.users.threads.modify({
         userId,
-        id: params.id || params.threadId!,
+        id: params.id || requireParam(params.threadId, 'id or threadId', GmailAction.MODIFY_THREAD),
         requestBody: {
           addLabelIds: params.addLabelIds,
           removeLabelIds: params.removeLabelIds
@@ -242,21 +252,21 @@ export async function executeGmailAction(params: UseGmailInput, oauth2Client: OA
     case GmailAction.TRASH_THREAD:
       const trashThreadResponse = await gmail.users.threads.trash({
         userId,
-        id: params.id || params.threadId!
+        id: params.id || requireParam(params.threadId, 'id or threadId', GmailAction.TRASH_THREAD)
       })
       return trashThreadResponse.data
 
     case GmailAction.UNTRASH_THREAD:
       const untrashThreadResponse = await gmail.users.threads.untrash({
         userId,
-        id: params.id || params.threadId!
+        id: params.id || requireParam(params.threadId, 'id or threadId', GmailAction.UNTRASH_THREAD)
       })
       return untrashThreadResponse.data
 
     case GmailAction.DELETE_THREAD:
       await gmail.users.threads.delete({
         userId,
-        id: params.id || params.threadId!
+        id: params.id || requireParam(params.threadId, 'id or threadId', GmailAction.DELETE_THREAD)
       })
       return { success: true, deleted: params.id || params.threadId }
 
@@ -274,7 +284,7 @@ export async function executeGmailAction(params: UseGmailInput, oauth2Client: OA
     case GmailAction.GET_DRAFT:
       const getDraftResponse = await gmail.users.drafts.get({
         userId,
-        id: params.id || params.draftId!,
+        id: params.id || requireParam(params.draftId, 'id or draftId', GmailAction.GET_DRAFT),
         format: params.format
       })
       return getDraftResponse.data
@@ -300,7 +310,7 @@ export async function executeGmailAction(params: UseGmailInput, oauth2Client: OA
       const sendDraftResponse = await gmail.users.drafts.send({
         userId,
         requestBody: {
-          id: params.id || params.draftId!
+          id: params.id || requireParam(params.draftId, 'id or draftId', GmailAction.SEND_DRAFT)
         }
       })
       return sendDraftResponse.data
@@ -308,7 +318,7 @@ export async function executeGmailAction(params: UseGmailInput, oauth2Client: OA
     case GmailAction.DELETE_DRAFT:
       await gmail.users.drafts.delete({
         userId,
-        id: params.id || params.draftId!
+        id: params.id || requireParam(params.draftId, 'id or draftId', GmailAction.DELETE_DRAFT)
       })
       return { success: true, deleted: params.id || params.draftId }
 
@@ -320,7 +330,7 @@ export async function executeGmailAction(params: UseGmailInput, oauth2Client: OA
     case GmailAction.GET_LABEL:
       const getLabelResponse = await gmail.users.labels.get({
         userId,
-        id: params.id || params.labelId!
+        id: params.id || requireParam(params.labelId, 'id or labelId', GmailAction.GET_LABEL)
       })
       return getLabelResponse.data
 
@@ -328,7 +338,7 @@ export async function executeGmailAction(params: UseGmailInput, oauth2Client: OA
       const createLabelResponse = await gmail.users.labels.create({
         userId,
         requestBody: {
-          name: params.name!,
+          name: requireParam(params.name, 'name', GmailAction.CREATE_LABEL),
           labelListVisibility: params.labelListVisibility,
           messageListVisibility: params.messageListVisibility,
           color: params.color
@@ -339,7 +349,7 @@ export async function executeGmailAction(params: UseGmailInput, oauth2Client: OA
     case GmailAction.UPDATE_LABEL:
       const updateLabelResponse = await gmail.users.labels.update({
         userId,
-        id: params.id || params.labelId!,
+        id: params.id || requireParam(params.labelId, 'id or labelId', GmailAction.UPDATE_LABEL),
         requestBody: {
           name: params.name,
           labelListVisibility: params.labelListVisibility,
@@ -352,7 +362,7 @@ export async function executeGmailAction(params: UseGmailInput, oauth2Client: OA
     case GmailAction.DELETE_LABEL:
       await gmail.users.labels.delete({
         userId,
-        id: params.id || params.labelId!
+        id: params.id || requireParam(params.labelId, 'id or labelId', GmailAction.DELETE_LABEL)
       })
       return { success: true, deleted: params.id || params.labelId }
 
@@ -365,8 +375,8 @@ export async function executeGmailAction(params: UseGmailInput, oauth2Client: OA
     case GmailAction.GET_ATTACHMENT:
       const getAttachmentResponse = await gmail.users.messages.attachments.get({
         userId,
-        messageId: params.messageId!,
-        id: params.id || params.attachmentId!
+        messageId: requireParam(params.messageId, 'messageId', GmailAction.GET_ATTACHMENT),
+        id: params.id || requireParam(params.attachmentId, 'id or attachmentId', GmailAction.GET_ATTACHMENT)
       })
       return getAttachmentResponse.data
 
@@ -375,7 +385,7 @@ export async function executeGmailAction(params: UseGmailInput, oauth2Client: OA
       const batchModifyResponse = await gmail.users.messages.batchModify({
         userId,
         requestBody: {
-          ids: params.ids!,
+          ids: requireParam(params.ids, 'ids', GmailAction.BATCH_MODIFY_MESSAGES),
           addLabelIds: params.addLabelIds,
           removeLabelIds: params.removeLabelIds
         }
@@ -386,7 +396,7 @@ export async function executeGmailAction(params: UseGmailInput, oauth2Client: OA
       const batchDeleteResponse = await gmail.users.messages.batchDelete({
         userId,
         requestBody: {
-          ids: params.ids!
+          ids: requireParam(params.ids, 'ids', GmailAction.BATCH_DELETE_MESSAGES)
         }
       })
       return { success: true, deleted: params.ids }
