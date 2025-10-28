@@ -28,7 +28,7 @@ function debugLog(...args: any[]) {
   console.error(...args)
 }
 
-// Import handlers
+// Import Calendar handlers
 import { CreateEventHandler } from "./handlers/core/CreateEventHandler.js"
 import { UpdateEventHandler } from "./handlers/core/UpdateEventHandler.js"
 import { DeleteEventHandler } from "./handlers/core/DeleteEventHandler.js"
@@ -39,6 +39,9 @@ import { ListCalendarsHandler } from "./handlers/core/ListCalendarsHandler.js"
 import { GetCurrentTimeHandler } from "./handlers/core/GetCurrentTimeHandler.js"
 import { FreeBusyEventHandler } from "./handlers/core/FreeBusyEventHandler.js"
 import { ListColorsHandler } from "./handlers/core/ListColorsHandler.js"
+
+// Import Gmail Pattern 1 wrapper
+import { executeGmailAction, UseGmailParams, type UseGmailInput } from "./gmail/pattern1.js"
 
 // Import auth
 import { initializeOAuth2Client } from "./auth/client.js"
@@ -200,7 +203,7 @@ async function executeCalendarAction(params: UseGoogleCalendarInput): Promise<an
 
 // Create MCP server instance
 const server = new McpServer({
-  name: "google-calendar-pattern1",
+  name: "google-services-pattern1",
   version: "1.0.0"
 })
 
@@ -244,9 +247,49 @@ Pattern 1 interface: single tool with action parameter. Supports all Google Cale
   }
 )
 
+// Register the use_gmail tool
+server.tool(
+  "use_gmail",
+  `Gmail operations - send, read, search, manage labels and threads.
+
+Pattern 1 interface: single tool with action parameter. Supports core Gmail operations including messages, threads, drafts, labels, and batch operations.`,
+  UseGmailParams,
+  {
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: false,
+    openWorldHint: true
+  },
+  async (args) => {
+    try {
+      // Parse and validate input with Zod
+      const params = z.object(UseGmailParams).parse(args) as UseGmailInput
+
+      // Execute Gmail action
+      const result = await executeGmailAction(params, oauth2Client)
+
+      return {
+        content: [{
+          type: "text" as const,
+          text: JSON.stringify(result, null, 2)
+        }]
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      return {
+        content: [{
+          type: "text" as const,
+          text: `Error: ${errorMessage}`
+        }],
+        isError: true
+      }
+    }
+  }
+)
+
 // Main function
 async function main() {
-  debugLog("=== Google Calendar MCP server starting ===")
+  debugLog("=== Google Services MCP server starting (Calendar + Gmail) ===")
   debugLog("Process PID:", process.pid)
   debugLog("Environment variables:", {
     GOOGLE_OAUTH_CREDENTIALS: process.env.GOOGLE_OAUTH_CREDENTIALS,
@@ -263,7 +306,7 @@ async function main() {
   // Connect server to transport
   await server.connect(transport)
 
-  debugLog("Google Calendar MCP server (Pattern 1, SDK) running via stdio")
+  debugLog("Google Services MCP server (Pattern 1, SDK) running via stdio - Calendar + Gmail tools available")
 }
 
 // Run the server
